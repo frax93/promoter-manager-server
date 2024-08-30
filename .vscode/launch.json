@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "attach",
+        "name": "Attach to Nodemon",
+        "port": 9229, // Porta predefinita per il debug remoto
+        "restart": true,
+        "localRoot": "${workspaceFolder}/src",
+        "remoteRoot": "/app/src" // Modifica se necessario
+      }
+    ]
+  }
+  
