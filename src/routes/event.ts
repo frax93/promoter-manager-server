@@ -122,8 +122,6 @@ router.post("/", async (req, res) => {
       ],
     });
 
-    console.log(utente?.dataValues.team);
-
     if (
       !utente?.dataValues.team.find(
         (el: { id: number }) => el.id === team.dataValues.id
@@ -149,6 +147,7 @@ router.post("/", async (req, res) => {
       data_fine,
       calendario_id: calendario.dataValues.id,
       team_id: teamId,
+      utente_id: idUtente,
     });
 
     // Rispondi con l'evento creato

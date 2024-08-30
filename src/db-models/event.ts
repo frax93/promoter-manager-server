@@ -2,6 +2,7 @@ import { DataTypes } from "sequelize";
 import sequelize from "../utils/sequelize";
 import { Team } from "./team";
 import { Calendario } from "./calendar";
+import { Utente } from "./user";
 
 const Evento = sequelize.define(
   "Evento",
@@ -34,17 +35,26 @@ const Evento = sequelize.define(
   }
 );
 
-Evento.belongsTo(Team, { foreignKey: 'team_id', as: 'teamId' });
+Evento.belongsTo(Team, { foreignKey: "team_id", as: "teamId" });
 
 Calendario.hasMany(Evento, {
-    foreignKey: 'calendario_id',
-    as: 'eventi',
-  });
-  
-  Evento.belongsTo(Calendario, {
-    foreignKey: 'calendario_id',
-    as: 'calendario',
-  });
+  foreignKey: "calendario_id",
+  as: "eventi",
+});
 
+Evento.belongsTo(Calendario, {
+  foreignKey: "calendario_id",
+  as: "calendario",
+});
+
+Utente.hasOne(Evento, {
+  foreignKey: "utente_id",
+  as: "evento", // nome dell'associazione
+});
+
+Evento.belongsTo(Utente, {
+  foreignKey: "utente_id",
+  as: "utente",
+});
 
 export { Evento };

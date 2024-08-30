@@ -120,7 +120,7 @@ router.post("/utente", async (req, res) => {
 // Modifica del team
 router.put("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { nome, descrizione, utentiIds: userIds } = req.body;
+  const { nome, descrizione, utentiIds: userIds, colore } = req.body;
 
   try {
     // Trova il team per ID
@@ -141,6 +141,7 @@ router.put("/:id", async (req: Request, res: Response) => {
     await team.update({
       nome,
       descrizione,
+      colore,
     });
 
     // Se sono stati passati userIds, aggiorna i membri del team
@@ -174,7 +175,7 @@ router.put("/:id", async (req: Request, res: Response) => {
       console.log(userIdsToAdd, "to add");
       console.log(usersToRemove, "to remove");
 
-      await Promise.all((userIdsToAdd as Array<number>).map(async (id) => {
+      await Promise.all((usersToAdd as Array<number>).map(async (id) => {
         return await UtenteTeam.create(
           {
             utente_id: id,
@@ -186,7 +187,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 
       if (usersToRemove.length > 0) {
         await Promise.all(
-          (userIdsToAdd as Array<number>).map(async (id) => {
+          (usersToRemove as Array<number>).map(async (id) => {
             return await UtenteTeam.destroy({
               where: {
                 utente_id: id,

@@ -1,8 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../utils/sequelize";
 import { Note } from "./note";
-import { UtenteTeam } from "./user-team";
-import { Team } from "./team";
 import bcrypt from 'bcryptjs';
 
 const Utente = sequelize.define('Utente', {
@@ -23,8 +21,13 @@ const Utente = sequelize.define('Utente', {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
     },
-    google_id: {
-        type: DataTypes.STRING,
+    two_factor_secret: {
+        type: DataTypes.STRING(64), // Campo per il segreto 2FA
+        allowNull: true,
+    },
+    two_factor_enabled: {
+        type: DataTypes.BOOLEAN, // Booleano per abilitare/disabilitare la 2FA
+        defaultValue: false,
     },
 }, {
     tableName: 'utenti',
