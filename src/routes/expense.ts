@@ -58,7 +58,7 @@ router.post("/", async (req, res) => {
     }
 
     // Verifica se l'evento esiste
-    const tipo = await Tipo.findByPk(eventoId);
+    const tipo = await Tipo.findByPk(tipoId);
     if (!tipo) {
       return res.status(404).json({ message: "Tipo non trovato" });
     }
