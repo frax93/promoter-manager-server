@@ -74,7 +74,9 @@ router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
     }
 
     note.dataValues.completed = completed;
-    await note.save();
+    await note.update({
+      completed,
+    });
 
     res.json(note);
   } catch (error) {
