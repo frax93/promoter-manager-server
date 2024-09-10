@@ -1,7 +1,8 @@
 import { Note } from "../db-models/note";
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import jwtMiddleware from "../middleware/jwt";
+import { Model } from "sequelize";
 
 const router = Router();
 
@@ -54,6 +55,31 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Errore durante la creazione della nota" });
+  }
+});
+
+router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { completed } = req.body;
+
+  if (typeof completed !== 'boolean') {
+    return res.status(400).json({ error: 'Il campo completed deve essere un booleano.' });
+  }
+
+  try {
+    const note = await Note.findByPk(id);
+
+    if (!note) {
+      return res.status(404).json({ error: 'Nota non trovata.' });
+    }
+
+    note.dataValues.completed = completed;
+    await note.save();
+
+    res.json(note);
+  } catch (error) {
+    console.error('Errore nel marcare la nota come completata:', error);
+    res.status(500).json({ error: 'Errore del server.' });
   }
 });
 
