@@ -105,4 +105,26 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.put('/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { referralLink, linkAzienda, linkVideo } = req.body;
+
+  try {
+    const utente = await Utente.findByPk(id);
+    if (!utente) {
+      return res.status(404).json({ message: 'Utente non trovato' });
+    }
+
+    await utente.update({
+      referralLink,
+      linkAzienda,
+      linkVideo,
+    });
+    
+    res.json(utente);
+  } catch (error) {
+    res.status(500).json({ message: 'Errore del server', error });
+  }
+});
+
 export default router;
