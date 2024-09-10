@@ -89,7 +89,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT /spesa/:id - Aggiorna una spesa
-router.put('/spesa/:id', async (req: Request, res: Response) => {
+router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { descrizione, importo, eventoId, tipoId } = req.body;
 
@@ -112,7 +112,7 @@ router.put('/spesa/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /spesa/:id - Elimina una spesa
-router.delete('/spesa/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {

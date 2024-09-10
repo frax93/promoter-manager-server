@@ -86,7 +86,7 @@ router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
 });
 
 // PUT /note/:id - Aggiorna una nota
-router.put('/note/:id', async (req: Request, res: Response) => {
+router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { contenuto } = req.body;
 
@@ -106,7 +106,7 @@ router.put('/note/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /note/:id - Elimina una nota
-router.delete('/note/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
