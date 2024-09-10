@@ -10,7 +10,9 @@ router.use(jwtMiddleware());
 
 router.get("/", async (req, res) => {
   try {
-    const note = await Note.findAll();
+    const note = await Note.findAll({
+      order: [['data_creazione', 'DESC']]
+    });
     res.json(note);
   } catch (err) {
     console.error(err);
