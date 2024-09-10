@@ -1,5 +1,5 @@
 import { Spesa } from "../db-models/expense";
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import { Evento } from "../db-models/event";
 import { Tipo } from "../db-models/type";
@@ -31,6 +31,12 @@ router.get("/utente", async (req, res) => {
   try {
     const spese = await Spesa.findAll({
       where: { utente_id: req.user?.id },
+      include: [
+        {
+          model: Tipo, // Il modello collegato
+          as: "tipoId", // Alias che hai dato alla relazione nel modello
+        },
+      ],
     });
     res.json(spese);
   } catch (err) {
@@ -79,6 +85,46 @@ router.post("/", async (req, res) => {
     res
       .status(500)
       .json({ message: "Errore durante la creazione della spesa" });
+  }
+});
+
+// PUT /spesa/:id - Aggiorna una spesa
+router.put('/spesa/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { descrizione, importo, eventoId, tipoId } = req.body;
+
+  try {
+    const spesa = await Spesa.findByPk(id);
+    if (!spesa) {
+      return res.status(404).json({ message: 'Spesa non trovata' });
+    }
+
+    await spesa.update({
+      descrizione,
+      importo,
+      eventoId,
+      tipoId,
+    });
+    res.json(spesa);
+  } catch (error) {
+    res.status(500).json({ message: 'Errore del server', error });
+  }
+});
+
+// DELETE /spesa/:id - Elimina una spesa
+router.delete('/spesa/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const spesa = await Spesa.findByPk(id);
+    if (!spesa) {
+      return res.status(404).json({ message: 'Spesa non trovata' });
+    }
+
+    await spesa.destroy();
+    res.json({ message: 'Spesa eliminata' });
+  } catch (error) {
+    res.status(500).json({ message: 'Errore del server', error });
   }
 });
 

@@ -2,7 +2,6 @@ import { Note } from "../db-models/note";
 import { Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import jwtMiddleware from "../middleware/jwt";
-import { Model } from "sequelize";
 
 const router = Router();
 
@@ -83,6 +82,43 @@ router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Errore nel marcare la nota come completata:', error);
     res.status(500).json({ error: 'Errore del server.' });
+  }
+});
+
+// PUT /note/:id - Aggiorna una nota
+router.put('/note/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { contenuto } = req.body;
+
+  try {
+    const note = await Note.findByPk(id);
+    if (!note) {
+      return res.status(404).json({ message: 'Nota non trovata' });
+    }
+
+    await note.update({
+      contenuto
+    });
+    res.json(note);
+  } catch (error) {
+    res.status(500).json({ message: 'Errore del server', error });
+  }
+});
+
+// DELETE /note/:id - Elimina una nota
+router.delete('/note/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const note = await Note.findByPk(id);
+    if (!note) {
+      return res.status(404).json({ message: 'Nota non trovata' });
+    }
+
+    await note.destroy();
+    res.json({ message: 'Nota eliminata' });
+  } catch (error) {
+    res.status(500).json({ message: 'Errore del server', error });
   }
 });
 

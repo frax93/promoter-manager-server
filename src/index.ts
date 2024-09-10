@@ -11,6 +11,15 @@ import typeRouter from './routes/type';
 import cors from 'cors';
 import sequelize from './utils/sequelize';
 import { __BASE_PATH__, __ORIGIN__, __PORT__ } from './constants/environment';
+import admin from 'firebase-admin';
+import cron from 'node-cron';
+
+// Inizializza l'app Firebase Admin
+const serviceAccount = require('./promoter-manager-35bdc-firebase-adminsdk-dprjc-50c6eb4744.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 const app = express();
 
@@ -34,6 +43,38 @@ const testDatabaseConnection = async () => {
 };
 
 testDatabaseConnection();
+
+// Pianifica l'invio di notifiche
+cron.schedule('* * * * *', async () => { // Esempio: ogni minuto
+    console.log('Controllo se ci sono notifiche da inviare...');
+  
+    // Implementa la logica per recuperare i token e i dettagli della notifica dal database
+    // Esempio:
+    const notifications = [
+      {
+        token: 'esempio_token',
+        title: 'Promemoria',
+        body: 'Questa è una notifica programmata.',
+      }
+    ];
+  
+    for (const notification of notifications) {
+      const message = {
+        notification: {
+          title: notification.title,
+          body: notification.body,
+        },
+        token: notification.token,
+      };
+  
+      try {
+        const response = await admin.messaging().send(message);
+        console.log('Notifica inviata con successo:', response);
+      } catch (error) {
+        console.error('Errore durante l\'invio della notifica:', error);
+      }
+    }
+  });
 
 // Routes
 app.use(`${__BASE_PATH__}/spese`, expensesRouter);
