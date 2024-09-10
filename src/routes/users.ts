@@ -65,7 +65,7 @@ router.get(
 router.get(
   "/disabilita-2fa",
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId; // Assumendo che req.user sia popolato dal middleware JWT
+    const userId = req.user?.id; // Assumendo che req.user sia popolato dal middleware JWT
 
     try {
       const user = await Utente.findByPk(userId);
