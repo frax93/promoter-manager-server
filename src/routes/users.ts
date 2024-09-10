@@ -116,11 +116,11 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
 
     await utente.update({
-      referralLink,
-      linkAzienda,
-      linkVideo,
+      referrallink: referralLink,
+      linkazienda: linkAzienda,
+      linkvideo: linkVideo,
     });
-    
+
     res.json(utente);
   } catch (error) {
     res.status(500).json({ message: 'Errore del server', error });

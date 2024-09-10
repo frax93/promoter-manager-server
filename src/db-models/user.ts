@@ -29,6 +29,21 @@ const Utente = sequelize.define('Utente', {
         type: DataTypes.BOOLEAN, // Booleano per abilitare/disabilitare la 2FA
         defaultValue: false,
     },
+    referrallink: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: true,
+    },
+    linkvideo: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: true,
+    },
+    linkazienda: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: true,
+    },
 }, {
     tableName: 'utenti',
     hooks: {
