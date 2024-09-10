@@ -8,6 +8,36 @@ import { UserModel } from "../models/user";
 import { Model } from "sequelize";
 
 const router = express.Router();
+router.post("/verifica-utenza", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const utente: Model<UserModel> | null = await Utente.findOne({
+      where: { email },
+    });
+    if (!utente) {
+      return res.status(404).json({ message: "Utente non trovato" });
+    }
+
+    const passwordIsValid = await bcrypt.compare(
+      password,
+      utente.dataValues.password
+    );
+
+    if (!passwordIsValid) {
+      return res.status(401).json({ message: "Password errata" });
+    }
+
+    res.status(200).json({
+      ...utente.dataValues,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Errore in verifica utente" });
+  }
+});
+
 
 router.post("/login", async (req, res) => {
   const { email, password, token2FA } = req.body;
