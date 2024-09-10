@@ -68,17 +68,16 @@ router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
 
   try {
     const note = await Note.findByPk(id);
-
+    console.log(note, completed, id);
     if (!note) {
       return res.status(404).json({ error: 'Nota non trovata.' });
     }
 
-    note.dataValues.completed = completed;
     await note.update({
       completed,
     });
 
-    res.json(note);
+    res.status(200).json(note);
   } catch (error) {
     console.error('Errore nel marcare la nota come completata:', error);
     res.status(500).json({ error: 'Errore del server.' });
