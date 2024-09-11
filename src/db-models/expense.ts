@@ -26,7 +26,6 @@ const Spesa = sequelize.define(
   }
 );
 
-Spesa.belongsTo(Evento, { foreignKey: 'evento_id', as: 'eventoId' });
 Spesa.belongsTo(Tipo, { foreignKey: 'tipo_id', as: 'tipoId' });
 Spesa.belongsTo(Utente, { foreignKey: 'utente_id', as: 'utenteId' });
 
