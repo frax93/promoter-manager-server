@@ -15,7 +15,19 @@ const Note = sequelize.define(
     completed: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-    }
+    },
+    reminder_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    is_sent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    token: {
+      type: DataTypes.STRING,
+      allowNull: true, // Token del dispositivo per notifiche
+    },
   },
   {
     tableName: "note",

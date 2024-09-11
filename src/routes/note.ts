@@ -35,7 +35,7 @@ router.get("/utente", async (req, res) => {
 
 // Endpoint per creare una nuova nota associata a un utente
 router.post("/", async (req, res) => {
-  const { contenuto } = req.body;
+  const { contenuto, reminderDate, token } = req.body;
   const idUtente = req.user?.id;
 
   try {
@@ -49,6 +49,8 @@ router.post("/", async (req, res) => {
     const nuovaNota = await Note.create({
       contenuto,
       utente_id: idUtente,
+      reminder_date: reminderDate ? new Date(reminderDate) : null, 
+      token
     });
 
     // Rispondi con la nota creata
@@ -88,7 +90,7 @@ router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
 // PUT /note/:id - Aggiorna una nota
 router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { contenuto } = req.body;
+  const { contenuto, reminderDate } = req.body;
 
   try {
     const note = await Note.findByPk(id);
@@ -97,7 +99,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
 
     await note.update({
-      contenuto
+      contenuto,
+      reminder_date: reminderDate ? new Date(reminderDate) : null, 
     });
     res.json(note);
   } catch (error) {

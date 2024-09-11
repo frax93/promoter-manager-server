@@ -11,6 +11,8 @@ import typeRouter from './routes/type';
 import cors from 'cors';
 import sequelize from './utils/sequelize';
 import { __BASE_PATH__, __ORIGIN__, __PORT__ } from './constants/environment';
+import cron from 'node-cron';
+import { checkAndSendNoteReminders } from './utils/send-push';
 
 const app = express();
 
@@ -22,6 +24,14 @@ app.use(cors({
 }));
 
 app.use(bodyParser.json());
+
+
+
+// Esegue la funzione ogni minuto
+cron.schedule('* * * * *', async () => {
+  console.log('Checking for note reminders to send...');
+  await checkAndSendNoteReminders();
+});
 
 const testDatabaseConnection = async () => {
     try {
