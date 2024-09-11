@@ -19,7 +19,7 @@ export async function sendConfirmationEmail(email: string, token: string) {
   });
 
   let mailOptions = {
-    from: 'prova@pmanager.com',
+    from: 'your-email@example.com',
     to: email,
     subject: "Conferma la tua registrazione",
     text: `Clicca sul seguente link per confermare la tua email: ${confirmationLink}`,
