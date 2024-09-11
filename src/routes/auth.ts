@@ -127,61 +127,79 @@ router.post("/registrazione", async (req, res) => {
 router.get('/conferma-email/:token', async (req, res) => {
   const { token } = req.params;
 
-  // Trova l'utente con il token di conferma
-  const user = await Utente.findOne({ where: { token_verifica: token } });
+  try {
+    // Trova l'utente con il token di conferma
+    const user = await Utente.findOne({ where: { token_verifica: token } });
 
-  if (!user) {
-    return res.status(400).send('Token non valido o già utilizzato.');
+    if (!user) {
+      return res.status(400).send("Token non valido o già utilizzato.");
+    }
+
+    // Controlla se il token è scaduto con Luxon
+    const now = DateTime.now();
+    const tokenExpires = DateTime.fromISO(user.dataValues.scadenza_token);
+
+    if (now > tokenExpires) {
+      return res.status(400).send("Il token di conferma è scaduto.");
+    }
+
+    // Aggiorna lo stato dell'utente e rimuovi il token di conferma
+
+    await user.update({
+      token_verifica: null,
+      email_confermata: true,
+      scadenza_token: null,
+    });
+
+    res.send("Email confermata con successo! Ora puoi effettuare il login.");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Errore");
   }
-
-  // Controlla se il token è scaduto con Luxon
-  const now = DateTime.now();
-  const tokenExpires = DateTime.fromISO(user.dataValues.scadenza_token);
-
-  if (now > tokenExpires) {
-    return res.status(400).send('Il token di conferma è scaduto.');
-  }
-
-  // Aggiorna lo stato dell'utente e rimuovi il token di conferma
-
-  await user.update({
-    token_verifica: null,
-    email_confermata: true,
-    scadenza_token: null,
-  });
-
-  res.send('Email confermata con successo! Ora puoi effettuare il login.');
 });
 
 router.post('/reinvia-conferma', async (req, res) => {
   const { email } = req.body;
 
-  // Trova l'utente in base all'email
-  const user: Model<UserModel> | null = await Utente.findOne({ where: { email } });
+  try {
+    // Trova l'utente in base all'email
+    const user: Model<UserModel> | null = await Utente.findOne({
+      where: { email },
+    });
 
-  if (!user) {
-    return res.status(404).send('Utente non trovato.');
+    if (!user) {
+      return res.status(404).send("Utente non trovato.");
+    }
+
+    if (user.dataValues?.email_confermata) {
+      return res.status(400).send("L'utente ha già confermato l'email.");
+    }
+
+    // Genera un nuovo token e una nuova data di scadenza usando Luxon
+    const newConfirmationToken = generateConfirmationToken();
+    const newConfirmationTokenExpires = DateTime.now()
+      .plus({ minutes: 15 })
+      .toISO();
+
+    // Aggiorna lo stato dell'utente e mette il token di verifica
+    await user.update({
+      token_verifica: newConfirmationToken,
+      email_confermata: false,
+      scadenza_token: newConfirmationTokenExpires,
+    });
+
+    // Invia una nuova email di conferma
+    await sendConfirmationEmail(email, newConfirmationToken);
+
+    res
+      .status(200)
+      .send(
+        "Nuova email di conferma inviata. Controlla la tua casella di posta."
+      );
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Errore");
   }
-
-  if (user.dataValues?.email_confermata) {
-    return res.status(400).send('L\'utente ha già confermato l\'email.');
-  }
-
-  // Genera un nuovo token e una nuova data di scadenza usando Luxon
-  const newConfirmationToken = generateConfirmationToken();
-  const newConfirmationTokenExpires = DateTime.now().plus({ minutes: 15 }).toISO();
-
-  // Aggiorna lo stato dell'utente e mette il token di verifica
-  await user.update({
-    token_verifica: newConfirmationToken,
-    email_confermata: false,
-    scadenza_token: newConfirmationTokenExpires,
-  });
-
-  // Invia una nuova email di conferma
-  await sendConfirmationEmail(email, newConfirmationToken);
-
-  res.status(200).send('Nuova email di conferma inviata. Controlla la tua casella di posta.');
 });
 
 export default router;
