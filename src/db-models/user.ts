@@ -48,7 +48,7 @@ const Utente = sequelize.define(
     },
     token_verifica: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     scadenza_token: {
       type: DataTypes.DATE, // Campo per memorizzare la data di scadenza del token
