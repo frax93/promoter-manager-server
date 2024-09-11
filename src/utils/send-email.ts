@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { MailerSend, EmailParams, Sender, Recipient } from "mailersend";
 
 const appUrl = "https://promoter-manager-server-0e30fdbde338.herokuapp.com"; // URL della tua applicazione (DA METTERE COME ENV)
 
@@ -6,24 +6,24 @@ function createConfirmationLink(token: string) {
   return `${appUrl}/confirm-email/${token}`;
 }
 
+const apikey = 'mlsn.12b12a22fae5ca051eee05641940a0eb8a3b582f2de2a28a35690fe41e37e13b';
+
 export async function sendConfirmationEmail(email: string, token: string) {
-  const confirmationLink = createConfirmationLink(token);
-  
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.elasticemail.com',
-    port: 2525,
-    auth: {
-      user: 'no-reply@pmanager.com',
-      pass: 'A643EE194059476BAC996D0329FB9DEFD54C'
-    }
-  });
+    const confirmationLink = createConfirmationLink(token);
 
-  let mailOptions = {
-    from: '4ftbt@starmail.net',
-    to: email,
-    subject: "Conferma la tua registrazione",
-    text: `Clicca sul seguente link per confermare la tua email: ${confirmationLink}`,
-  };
+    const mailersend = new MailerSend({
+      apiKey: apikey,
+    });
 
-  return transporter.sendMail(mailOptions);
+    const sentFrom = new Sender("you@yourdomain.com", "Promoter Manager");
+    
+    const recipients = [new Recipient(email, "Recipient")];
+
+    const emailParams = new EmailParams()
+        .setFrom(sentFrom)
+        .setTo(recipients)
+        .setSubject("Conferma la tua registrazione")
+        .setText(`Clicca sul seguente link per confermare la tua email: ${confirmationLink}`);
+    
+    return mailersend.email.send(emailParams);
 }
