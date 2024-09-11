@@ -128,7 +128,7 @@ router.get('/conferma-email/:token', async (req, res) => {
   const { token } = req.params;
 
   // Trova l'utente con il token di conferma
-  const user = await Utente.findOne({ where: { confirmationToken: token } });
+  const user = await Utente.findOne({ where: { token_verifica: token } });
 
   if (!user) {
     return res.status(400).send('Token non valido o già utilizzato.');
