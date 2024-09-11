@@ -58,12 +58,6 @@ router.post("/", async (req, res) => {
     }
 
     // Verifica se l'evento esiste
-    const evento = await Evento.findByPk(eventoId);
-    if (!evento) {
-      return res.status(404).json({ message: "Evento non trovato" });
-    }
-
-    // Verifica se l'evento esiste
     const tipo = await Tipo.findByPk(tipoId);
     if (!tipo) {
       return res.status(404).json({ message: "Tipo non trovato" });
@@ -74,7 +68,6 @@ router.post("/", async (req, res) => {
       descrizione,
       importo,
       utente_id: utenteId,
-      evento_id: eventoId,
       tipo_id: tipoId,
     });
 
@@ -91,7 +84,7 @@ router.post("/", async (req, res) => {
 // PUT /spesa/:id - Aggiorna una spesa
 router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { descrizione, importo, eventoId, tipoId } = req.body;
+  const { descrizione, importo, tipoId } = req.body;
 
   try {
     const spesa = await Spesa.findByPk(id);
@@ -102,8 +95,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     await spesa.update({
       descrizione,
       importo,
-      eventoId,
-      tipoId,
+      tipo_id: tipoId,
     });
     res.json(spesa);
   } catch (error) {
