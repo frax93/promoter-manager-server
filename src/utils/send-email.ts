@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
 import {
-  __ACCESS_TOKEN_,
+  __REFRESH_TOKEN_,
   __CLIENT_ID__,
   __CLIENT_SECRET__,
   __EMAIL_USER__,
@@ -42,6 +42,7 @@ export async function sendConfirmationEmail(email: string, token: string) {
       type: "OAuth2",
       clientId,
       clientSecret,
+      refreshToken: __REFRESH_TOKEN_,
     },
   });
 
