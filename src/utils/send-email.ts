@@ -7,6 +7,7 @@ function createConfirmationLink(token: string) {
   return `${appUrl}/api/autenticazione/conferma-email/${token}`;
 }
 
+const accessToken = __ACCESS_TOKEN_;
 
 const user = __EMAIL_USER__;
 const clientId = __CLIENT_ID__;
@@ -20,6 +21,7 @@ export async function sendConfirmationEmail(email: string, token: string) {
     secure: true,
     auth: {
       user,
+      accessToken,
       type: 'OAuth2',
       clientId,
       clientSecret,

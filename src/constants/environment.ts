@@ -17,7 +17,7 @@ export const __JWT_SECRET__ = process.env.JWT_SECRET || 'cd844fbaf51642dd4f14c49
 /** Client Email */
 export const __CLIENT_ID__ = process.env.CLIENT_ID || '206458219222-uaatakq3lkktt6cchrarj77d86farfd9.apps.googleusercontent.com';
 
-export const __ACCESS_TOKEN_ = process.env.ACCESS_TOKEN || '';
+export const __ACCESS_TOKEN_ = process.env.ACCESS_TOKEN || 'AIzaSyDynvTvigEDjckjzTi6QC8gAcd_xl3mbgk';
 
 export const __CLIENT_SECRET__ = process.env.CLIENT_SECRET || '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';
 
