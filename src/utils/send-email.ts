@@ -8,16 +8,18 @@ function createConfirmationLink(token: string) {
 
 export async function sendConfirmationEmail(email: string, token: string) {
   const confirmationLink = createConfirmationLink(token);
+  
   const transporter = nodemailer.createTransport({
-    service: 'SendGrid',
+    host: 'smtp.elasticemail.com',
+    port: 2525,
     auth: {
-      user: 'apikey',
-      pass: 'YOUR_SENDGRID_API_KEY'
+      user: 'no-reply@pmanager.com',
+      pass: 'A643EE194059476BAC996D0329FB9DEFD54C'
     }
   });
 
   let mailOptions = {
-    from: 'your-email@example.com',
+    from: 'no-reply@pmanager.com',
     to: email,
     subject: "Conferma la tua registrazione",
     text: `Clicca sul seguente link per confermare la tua email: ${confirmationLink}`,
