@@ -110,12 +110,12 @@ router.post("/registrazione", async (req, res) => {
       nome,
       email,
       password,
-      // token_verifica: confirmationToken,
-      // email_confermata: false,
-      // scadenza_token: confirmationTokenExpires,
+      token_verifica: confirmationToken,
+      email_confermata: false,
+      scadenza_token: confirmationTokenExpires,
     });
     // Invia l'email di conferma
-    // await sendConfirmationEmail(email, confirmationToken);
+    await sendConfirmationEmail(email, confirmationToken);
     
     res.status(201).json(utente);
   } catch (err) {
