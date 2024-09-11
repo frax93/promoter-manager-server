@@ -17,6 +17,10 @@ const oauth2Client = new google.auth.OAuth2(
   "https://developers.google.com/oauthplayground" // URL di reindirizzamento
 );
 
+oauth2Client.setCredentials({
+  refresh_token: __REFRESH_TOKEN_, // Il refresh token ottenuto
+});
+
 // Ottieni l'access token
 const getAccessToken = async () => {
   const { token } = await oauth2Client.getAccessToken();
