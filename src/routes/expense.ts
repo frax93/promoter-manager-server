@@ -46,7 +46,7 @@ router.get("/utente", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { descrizione, importo, eventoId, tipoId } = req.body;
+  const { descrizione, importo, tipoId } = req.body;
 
   const utenteId = req.user?.id;
 
