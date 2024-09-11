@@ -15,7 +15,7 @@ export async function sendConfirmationEmail(email: string, token: string) {
       apiKey: apikey,
     });
 
-    const sentFrom = new Sender("you@yourdomain.com", "Promoter Manager");
+    const sentFrom = new Sender("frank.md93@gmail.com", "Promoter Manager");
     
     const recipients = [new Recipient(email, "Recipient")];
 
