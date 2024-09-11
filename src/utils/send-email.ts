@@ -11,13 +11,13 @@ export async function sendConfirmationEmail(email: string, token: string) {
   let transporter = nodemailer.createTransport({
     service: "gmail", // Puoi usare Gmail o un altro servizio
     auth: {
-      user: "frank.md93@gmail.com",
-      pass: 'q4C_j537Q".5oN)E',
+      user: "francesco.murador@sistinf.it",
+      pass: 'dv6.1215sl',
     },
   });
 
   let mailOptions = {
-    from: "frank.md93@gmail.com",
+    from: "francesco.murador@sistinf.it",
     to: email,
     subject: "Conferma la tua registrazione",
     text: `Clicca sul seguente link per confermare la tua email: ${confirmationLink}`,
