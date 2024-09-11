@@ -160,7 +160,7 @@ router.post('/reinvia-conferma', async (req, res) => {
   const user: Model<UserModel> | null = await Utente.findOne({ where: { email } });
 
   if (!user) {
-    return res.status(400).send('Utente non trovato.');
+    return res.status(404).send('Utente non trovato.');
   }
 
   if (user.dataValues?.email_confermata) {
