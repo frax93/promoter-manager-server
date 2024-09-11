@@ -8,16 +8,16 @@ function createConfirmationLink(token: string) {
 
 export async function sendConfirmationEmail(email: string, token: string) {
   const confirmationLink = createConfirmationLink(token);
-  let transporter = nodemailer.createTransport({
-    service: "gmail", // Puoi usare Gmail o un altro servizio
+  const transporter = nodemailer.createTransport({
+    service: 'SendGrid',
     auth: {
-      user: "francesco.murador@sistinf.it",
-      pass: 'dv6.1215sl',
-    },
+      user: 'apikey',
+      pass: 'YOUR_SENDGRID_API_KEY'
+    }
   });
 
   let mailOptions = {
-    from: "francesco.murador@sistinf.it",
+    from: 'your-email@example.com',
     to: email,
     subject: "Conferma la tua registrazione",
     text: `Clicca sul seguente link per confermare la tua email: ${confirmationLink}`,
