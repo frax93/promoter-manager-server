@@ -19,7 +19,7 @@ export async function sendConfirmationEmail(email: string, token: string) {
   });
 
   let mailOptions = {
-    from: 'frank.md93@gmail.com',
+    from: '4ftbt@starmail.net',
     to: email,
     subject: "Conferma la tua registrazione",
     text: `Clicca sul seguente link per confermare la tua email: ${confirmationLink}`,
