@@ -1,4 +1,4 @@
 node_modules
 # Keep environment variables out of version control
 dist
-promoter-manager-35bdc-firebase-adminsdk-dprjc-50c6eb4744.json
+/src/promoter-manager-35bdc-firebase-adminsdk-dprjc-50c6eb4744.json
