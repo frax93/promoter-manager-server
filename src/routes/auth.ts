@@ -84,6 +84,7 @@ router.post("/login", async (req, res) => {
     res.status(200).json({
       id: utente.dataValues.id,
       email: utente.dataValues.email,
+      nome: utente.dataValues.nome,
       accessToken: token,
     });
   } catch (err) {
