@@ -1,3 +1,5 @@
+import { TeamModel } from "./team";
+
 export interface UserModel {
   id: string;
   password: string;
@@ -11,5 +13,6 @@ export interface UserModel {
   token_verifica: string;
   scadenza_token: string;
   email_confermata: boolean;
+  team: Array<TeamModel>;
 }
   

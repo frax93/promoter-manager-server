@@ -4,6 +4,10 @@ import { Utente } from "../db-models/user";
 import jwtMiddleware from "../middleware/jwt";
 import { UtenteTeam } from "../db-models/user-team";
 import { Calendario } from "../db-models/calendar";
+import { DateTime } from "luxon";
+import { Model } from "sequelize";
+import { TeamModel } from "../models/team";
+import { UserModel } from "../models/user";
 
 const router = Router();
 
@@ -25,11 +29,14 @@ router.get("/utente", async (req, res) => {
 
   try {
     // Trova l'utente
-    const utente = await Utente.findByPk(idUtente, {
+    const utente: Model<UserModel> | null = await Utente.findByPk(idUtente, {
       include: [
         {
           model: Team,
           as: "team", // Alias dell'associazione
+          where: {
+            attivo: true,
+          },
           include: [
             {
               model: Utente,
@@ -202,6 +209,28 @@ router.put("/:id", async (req: Request, res: Response) => {
     res.json({ message: "Team aggiornato con successo" });
   } catch (error) {
     console.error("Errore durante l'aggiornamento del team:", error);
+    res.status(500).json({ message: "Errore interno del server" });
+  }
+});
+
+// Nuovo endpoint per cancellazione logica
+router.delete("/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    // Trova il team per ID
+    const team: Model<TeamModel> | null = await Team.findByPk(id);
+
+    if (!team) {
+      return res.status(404).json({ message: "Team non trovato" });
+    }
+
+    // Effettua la cancellazione logica impostando il flag attivo su false
+    await team.update({ attivo: false, data_disattivo: DateTime.now() });
+
+    res.json({ message: "Team disattivato con successo" });
+  } catch (error) {
+    console.error("Errore durante la disattivazione del team:", error);
     res.status(500).json({ message: "Errore interno del server" });
   }
 });
