@@ -35,7 +35,7 @@ router.put("/", async (req, res) => {
         await LinkUtili.update({ url: link.url }, { where: { id: link.id } });
       } else {
         // Crea un nuovo link
-        await LinkUtili.create({ url: link.url, userId });
+        await LinkUtili.create({ url: link.url, utente_id: userId });
       }
     }
 
