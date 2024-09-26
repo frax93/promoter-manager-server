@@ -57,6 +57,12 @@ router.get("/utente", async (req, res) => {
                 {
                   model: Evento,
                   as: "eventi",
+                  include: [
+                    {
+                      model: Note,
+                      as: "nota",
+                    },
+                  ],
                 },
               ],
             },
