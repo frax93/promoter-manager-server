@@ -9,6 +9,10 @@ import { Model } from "sequelize";
 import { generateConfirmationToken } from "../utils/generate-confirmation-token";
 import { sendConfirmationEmail } from "../utils/send-email";
 import { DateTime } from 'luxon';
+import { Team } from "../db-models/team";
+import { UtenteTeam } from "../db-models/user-team";
+import { TeamModel } from "../models/team";
+import { clientTeam } from "../constants/client-team";
 
 const router = express.Router();
 router.post("/verifica-utenza", async (req, res) => {
@@ -99,6 +103,7 @@ router.post("/registrazione", async (req, res) => {
   try {
     // Verifica se l'email esiste già
     const existingUser = await Utente.findOne({ where: { email } });
+
     if (existingUser) {
       return res.status(400).send("L'email è già in uso.");
     }
@@ -107,7 +112,7 @@ router.post("/registrazione", async (req, res) => {
 
     const confirmationTokenExpires = DateTime.now().plus({ minutes: 15 }).toISO();
 
-    const utente = await Utente.create({
+    const nuovoUtente: Model<UserModel> = await Utente.create({
       nome,
       email,
       password,
@@ -115,10 +120,20 @@ router.post("/registrazione", async (req, res) => {
       email_confermata: false,
       scadenza_token: confirmationTokenExpires,
     });
+
+
+    const nuovoTeam: Model<TeamModel> = await Team.create({ ...clientTeam });
+
+    // Associa l'utente al team
+    await UtenteTeam.create({
+      utente_id: nuovoUtente.dataValues.id,
+      team_id: nuovoTeam.dataValues.id,
+    });
+
     // Invia l'email di conferma
     await sendConfirmationEmail(email, confirmationToken);
     
-    res.status(201).json(utente);
+    res.status(201).json(nuovoUtente);
   } catch (err) {
     console.error(err);
     res.status(500).send("Errore nella creazione dell'utente");

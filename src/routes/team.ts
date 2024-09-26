@@ -36,6 +36,7 @@ router.get("/utente", async (req, res) => {
           as: "team", // Alias dell'associazione
           where: {
             attivo: true,
+            is_cliente: false,
           },
           include: [
             {
@@ -83,6 +84,7 @@ router.post("/utente", async (req, res) => {
 
   try {
     const utente = await Utente.findByPk(idUtente);
+
     if (!utente) {
       return res.status(404).json({ message: "Utente non trovato" });
     }

@@ -24,6 +24,10 @@ const Team = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    is_cliente: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     tableName: "team",
