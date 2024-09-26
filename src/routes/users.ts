@@ -3,7 +3,7 @@ import { Request, Response, Router } from "express";
 import jwtMiddleware from "../middleware/jwt";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
-import { sendEmail } from "../utils/send-email";
+import { appUrl, sendEmail } from "../utils/send-email";
 
 const router = Router();
 
@@ -139,7 +139,7 @@ router.post("/disponibilita", async (req, res) => {
       await sendEmail({
         to: email,
         subject: `Disponibilità utente ${name} - ${emailUser}`,
-        html: `<html><body><p>testo email</p></body></html>`,
+        text: ` Controlla la disponibilità su ${appUrl}/public/calendar.html`,
       });
     }
 
