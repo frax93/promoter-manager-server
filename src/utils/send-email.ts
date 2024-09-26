@@ -27,7 +27,7 @@ const getAccessToken = async () => {
   const { token } = await oauth2Client.getAccessToken();
   return token;
 };
-const appUrl = "https://promoter-manager-server-0e30fdbde338.herokuapp.com"; // URL della tua applicazione (DA METTERE COME ENV)
+export const appUrl = "https://promoter-manager-server-0e30fdbde338.herokuapp.com"; // URL della tua applicazione (DA METTERE COME ENV)
 
 function createConfirmationLink(token: string) {
   return `${appUrl}/api/autenticazione/conferma-email/${token}`;
