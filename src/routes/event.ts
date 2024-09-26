@@ -214,7 +214,7 @@ router.put("/:id", async (req: Request, res: Response) => {
       data_inizio: data_inizio || evento.dataValues?.data_inizio,
       data_fine: data_fine || evento.dataValues?.data_fine,
       calendario_id: evento.dataValues?.calendario_id,
-      nota_id: nuovaNota.dataValues.id,
+      note_id: nuovaNota.dataValues.id,
     });
 
     return res.json(evento);
