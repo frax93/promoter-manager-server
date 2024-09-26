@@ -49,6 +49,9 @@ router.get("/utente", async (req, res) => {
         {
           model: Team,
           as: "team",
+          where: {
+            attivo: true,
+          },
           include: [
             {
               model: Calendario,

@@ -7,8 +7,8 @@ import speakeasy from "speakeasy";
 import { UserModel } from "../models/user";
 import { Model } from "sequelize";
 import { generateConfirmationToken } from "../utils/generate-confirmation-token";
-import { sendConfirmationEmail } from "../utils/send-email";
-import { DateTime } from 'luxon';
+import { sendConfirmationEmail, sendEmail } from "../utils/send-email";
+import { DateTime } from "luxon";
 import { Team } from "../db-models/team";
 import { UtenteTeam } from "../db-models/user-team";
 import { TeamModel } from "../models/team";
@@ -110,7 +110,9 @@ router.post("/registrazione", async (req, res) => {
     // Genera il codice di conferma
     const confirmationToken = generateConfirmationToken();
 
-    const confirmationTokenExpires = DateTime.now().plus({ minutes: 15 }).toISO();
+    const confirmationTokenExpires = DateTime.now()
+      .plus({ minutes: 15 })
+      .toISO();
 
     const nuovoUtente: Model<UserModel> = await Utente.create({
       nome,
@@ -120,7 +122,6 @@ router.post("/registrazione", async (req, res) => {
       email_confermata: false,
       scadenza_token: confirmationTokenExpires,
     });
-
 
     const nuovoTeam: Model<TeamModel> = await Team.create({ ...clientTeam });
 
@@ -132,7 +133,7 @@ router.post("/registrazione", async (req, res) => {
 
     // Invia l'email di conferma
     await sendConfirmationEmail(email, confirmationToken);
-    
+
     res.status(201).json(nuovoUtente);
   } catch (err) {
     console.error(err);
@@ -140,7 +141,7 @@ router.post("/registrazione", async (req, res) => {
   }
 });
 
-router.get('/conferma-email/:token', async (req, res) => {
+router.get("/conferma-email/:token", async (req, res) => {
   const { token } = req.params;
 
   try {
@@ -174,7 +175,7 @@ router.get('/conferma-email/:token', async (req, res) => {
   }
 });
 
-router.post('/reinvia-conferma', async (req, res) => {
+router.post("/reinvia-conferma", async (req, res) => {
   const { email } = req.body;
 
   try {

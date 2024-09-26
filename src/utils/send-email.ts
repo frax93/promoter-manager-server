@@ -6,6 +6,7 @@ import {
   __CLIENT_SECRET__,
   __EMAIL_USER__,
 } from "../constants/environment";
+import Mail from "nodemailer/lib/mailer";
 
 const user = __EMAIL_USER__;
 const clientId = __CLIENT_ID__;
@@ -32,10 +33,8 @@ function createConfirmationLink(token: string) {
   return `${appUrl}/api/autenticazione/conferma-email/${token}`;
 }
 
-
-export async function sendConfirmationEmail(email: string, token: string) {
-  const confirmationLink = createConfirmationLink(token);
-  const accessToken = await getAccessToken() as string;
+export const sendEmail = async (options: Mail.Options) => {
+  const accessToken = (await getAccessToken()) as string;
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
@@ -50,12 +49,20 @@ export async function sendConfirmationEmail(email: string, token: string) {
     },
   });
 
-  const mailOptions = {
+  return transporter.sendMail({
+    ...options,
     from: user,
+  });
+};
+
+export async function sendConfirmationEmail(email: string, token: string) {
+  const confirmationLink = createConfirmationLink(token);
+
+  const mailOptions = {
     to: email,
     subject: "Conferma la tua registrazione",
     text: `Clicca sul seguente link per confermare la tua email: ${confirmationLink}`,
   };
 
-  return transporter.sendMail(mailOptions);
+  return sendEmail(mailOptions);
 }

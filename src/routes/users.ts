@@ -3,6 +3,7 @@ import { Request, Response, Router } from "express";
 import jwtMiddleware from "../middleware/jwt";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
+import { sendEmail } from "../utils/send-email";
 
 const router = Router();
 
@@ -124,6 +125,28 @@ router.put('/:id', async (req: Request, res: Response) => {
     res.json(utente);
   } catch (error) {
     res.status(500).json({ message: 'Errore del server', error });
+  }
+});
+
+
+router.post("/disponibilita", async (req, res) => {
+  const { emails = [] } = req.body;
+  const name = req.user?.name; 
+  const email = req.user?.email;
+  try {
+    for (const email of emails) {
+      // Invia l'email di conferma
+      await sendEmail({
+        to: email,
+        subject: `Disponibilità utente ${name} - ${email}`,
+        html: `<html><body><p>testo email</p></body></html>`,
+      });
+    }
+
+    res.send("Email inoltrate con successo!");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Errore");
   }
 });
 
