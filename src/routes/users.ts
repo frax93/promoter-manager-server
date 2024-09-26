@@ -139,7 +139,7 @@ router.post("/disponibilita", async (req, res) => {
       await sendEmail({
         to: email,
         subject: `Disponibilità utente ${name} - ${emailUser}`,
-        text: ` Controlla la disponibilità su ${appUrl}/public/calendar.html`,
+        text: ` Controlla la disponibilità su ${appUrl}/calendar`,
       });
     }
 
