@@ -8,6 +8,7 @@ import calendarRouter from './routes/calendar';
 import eventRouter from './routes/event';
 import noteRouter from './routes/note';
 import typeRouter from './routes/type';
+import usefulLinksRouter from './routes/useful-links';
 import cors from 'cors';
 import sequelize from './utils/sequelize';
 import { __BASE_PATH__, __ORIGIN__, __PORT__ } from './constants/environment';
@@ -54,6 +55,7 @@ app.use(`${__BASE_PATH__}/calendari`, calendarRouter);
 app.use(`${__BASE_PATH__}/eventi`, eventRouter);
 app.use(`${__BASE_PATH__}/note`, noteRouter);
 app.use(`${__BASE_PATH__}/tipi`, typeRouter);
+app.use(`${__BASE_PATH__}/link-utili`, usefulLinksRouter);
 
 app.listen(__PORT__, () => {
   console.log(`Server running at http://localhost:${__PORT__}`);
