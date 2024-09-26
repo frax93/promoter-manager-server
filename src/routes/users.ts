@@ -132,13 +132,13 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.post("/disponibilita", async (req, res) => {
   const { emails = [] } = req.body;
   const name = req.user?.name; 
-  const email = req.user?.email;
+  const emailUser = req.user?.email;
   try {
     for (const email of emails) {
       // Invia l'email di conferma
       await sendEmail({
         to: email,
-        subject: `Disponibilità utente ${name} - ${email}`,
+        subject: `Disponibilità utente ${name} - ${emailUser}`,
         html: `<html><body><p>testo email</p></body></html>`,
       });
     }
