@@ -59,7 +59,7 @@ Evento.belongsTo(Utente, {
 });
 
 Evento.belongsTo(Note, {
-  foreignKey: "nota_id",
+  foreignKey: "note_id",
   as: "nota",
 });
 
