@@ -7,4 +7,5 @@ export interface EventoModel {
   data_fine: Date;
   calendario_id: number;
   team_id: number;
+  nota_id: number;
 }

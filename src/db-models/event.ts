@@ -3,6 +3,7 @@ import sequelize from "../utils/sequelize";
 import { Team } from "./team";
 import { Calendario } from "./calendar";
 import { Utente } from "./user";
+import { Note } from "./note";
 
 const Evento = sequelize.define(
   "Evento",
@@ -55,6 +56,11 @@ Utente.hasOne(Evento, {
 Evento.belongsTo(Utente, {
   foreignKey: "utente_id",
   as: "utente",
+});
+
+Evento.belongsTo(Note, {
+  foreignKey: "nota_id",
+  as: "nota",
 });
 
 export { Evento };

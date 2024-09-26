@@ -8,6 +8,8 @@ import { Utente } from "../db-models/user";
 import { Model } from "sequelize";
 import { EventoModel } from "../models/event";
 import { TeamModel } from "../models/team";
+import { Note } from "../db-models/note";
+import { NoteModel } from "../models/note";
 
 const router = Router();
 
@@ -163,7 +165,7 @@ router.post("/", async (req, res) => {
 // Endpoint per modificare un evento
 router.put("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { titolo, descrizione, data_inizio, data_fine } = req.body;
+  const { titolo, descrizione, data_inizio, data_fine, nota } = req.body;
 
   const idLoggedUser = req.user?.id;
 
@@ -198,6 +200,12 @@ router.put("/:id", async (req: Request, res: Response) => {
         .json({ message: "Non sei autorizzato a eliminare questo evento" });
     }
 
+     // Crea la nuova nota associata all'utente
+     const nuovaNota: Model<NoteModel> = await Note.create({
+      contenuto: nota,
+      utente_id: idLoggedUser,
+    });
+
 
     // Aggiorna l'evento con i nuovi dati
     await evento.update({
@@ -206,6 +214,7 @@ router.put("/:id", async (req: Request, res: Response) => {
       data_inizio: data_inizio || evento.dataValues?.data_inizio,
       data_fine: data_fine || evento.dataValues?.data_fine,
       calendario_id: evento.dataValues?.calendario_id,
+      nota_id: nuovaNota.dataValues.id,
     });
 
     return res.json(evento);
