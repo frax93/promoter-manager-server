@@ -138,16 +138,14 @@ router.post("/disponibilita", async (req, res) => {
   const emailUser = req.user?.email;
   const id = req.user?.id;
   try {
-    const teamCliente = await Team.findOne({
-      where: {
-        is_cliente: true,
-      },
+    const teamCliente = await UtenteTeam.findOne({
+      where: { id_utente: id },
       include: [
         {
-          model: UtenteTeam,
+          model: Team,
           as: "team_id",
           where: {
-            id_utente: id,
+            is_cliente: true,
           },
         },
       ],
@@ -158,7 +156,7 @@ router.post("/disponibilita", async (req, res) => {
       const token = jwt.sign(
         {
           id: id,
-          team: teamCliente?.dataValues.id,
+          team: teamCliente?.dataValues?.id,
         },
         __JWT_SECRET__,
         { expiresIn: "1h" }
