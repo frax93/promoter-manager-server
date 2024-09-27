@@ -138,19 +138,21 @@ router.post("/disponibilita", async (req, res) => {
   const emailUser = req.user?.email;
   const id = req.user?.id;
   try {
-    const teamCliente = await UtenteTeam.findOne({
-      where: { id_utente: id },
+    const teamCliente = await Team.findOne({
+      where: {
+        attivo: true,
+        is_cliente: true,
+      },
       include: [
         {
-          model: Team,
-          as: "utenti",
+          model: Utente,
+          as: "utenti", // Alias dell'associazione
           where: {
-            is_cliente: true,
+            id,
           },
         },
       ],
     });
-
     for (const email of emails) {
       // Genera il JWT
       const token = jwt.sign(
