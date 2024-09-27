@@ -110,7 +110,7 @@ router.post("/", async (req, res) => {
 
   const idUtente = req.user?.id;
 
-  const idTeam = req.user?.teamId || teamId;
+  const idTeam = req.user?.team || teamId;
 
   try {
     // Verifica se il team esiste
