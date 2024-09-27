@@ -6,6 +6,8 @@ import qrcode from "qrcode";
 import { sendEmail, webAppUrl } from "../utils/send-email";
 import { __JWT_SECRET__ } from "../constants/environment";
 import jwt from "jsonwebtoken";
+import { Team } from "../db-models/team";
+import { UtenteTeam } from "../db-models/user-team";
 
 const router = Router();
 
@@ -21,77 +23,77 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get(
-  "/abilita-2fa",
-  async (req: Request, res: Response) => {
-    const userId = req.user?.id; // Assumendo che req.user sia popolato dal middleware JWT
+router.get("/abilita-2fa", async (req: Request, res: Response) => {
+  const userId = req.user?.id; // Assumendo che req.user sia popolato dal middleware JWT
 
-    try {
-      const user = await Utente.findByPk(userId);
-      if (!user) {
-        return res.status(404).json({ message: "Utente non trovato" });
-      }
+  try {
+    const user = await Utente.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utente non trovato" });
+    }
 
-      // Genera un nuovo segreto per la 2FA
-      const secret = speakeasy.generateSecret({ length: 20 });
+    // Genera un nuovo segreto per la 2FA
+    const secret = speakeasy.generateSecret({ length: 20 });
 
-      await Utente.update({
+    await Utente.update(
+      {
         two_factor_secret: secret.base32,
         two_factor_enabled: true,
-      }, {
-        where: { id: userId }
-      });
-
-      // Genera l'URL per l'app di autenticazione
-      const otpAuthUrl = speakeasy.otpauthURL({
-        secret: secret.base32,
-        label: `AppName (${user.dataValues.email})`,
-        encoding: "base32",
-      });
-
-      // Genera il QR code per l'app di autenticazione
-      const qrCode = await qrcode.toDataURL(otpAuthUrl);
-
-      res.json({
-        message: "2FA abilitata con successo",
-        qrCode,
-        secret: secret.base32,
-      });
-    } catch (error) {
-      res
-        .status(500)
-        .json({ message: "Errore durante l'abilitazione della 2FA", error });
-    }
-  }
-);
-
-router.get(
-  "/disabilita-2fa",
-  async (req: Request, res: Response) => {
-    const userId = req.user?.id; // Assumendo che req.user sia popolato dal middleware JWT
-
-    try {
-      const user = await Utente.findByPk(userId);
-      if (!user) {
-        return res.status(404).json({ message: "Utente non trovato" });
+      },
+      {
+        where: { id: userId },
       }
+    );
 
-      await Utente.update({
+    // Genera l'URL per l'app di autenticazione
+    const otpAuthUrl = speakeasy.otpauthURL({
+      secret: secret.base32,
+      label: `AppName (${user.dataValues.email})`,
+      encoding: "base32",
+    });
+
+    // Genera il QR code per l'app di autenticazione
+    const qrCode = await qrcode.toDataURL(otpAuthUrl);
+
+    res.json({
+      message: "2FA abilitata con successo",
+      qrCode,
+      secret: secret.base32,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Errore durante l'abilitazione della 2FA", error });
+  }
+});
+
+router.get("/disabilita-2fa", async (req: Request, res: Response) => {
+  const userId = req.user?.id; // Assumendo che req.user sia popolato dal middleware JWT
+
+  try {
+    const user = await Utente.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utente non trovato" });
+    }
+
+    await Utente.update(
+      {
         two_factor_secret: null,
         two_factor_enabled: false,
-      }, {
-        where: { id: userId }
-      });
+      },
+      {
+        where: { id: userId },
+      }
+    );
 
-      res.json({ message: "2FA disabilitata con successo" });
-    } catch (error) {
-      res.status(500).json({
-        message: "Errore durante la disabilitazione della 2FA",
-        error,
-      });
-    }
+    res.json({ message: "2FA disabilitata con successo" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Errore durante la disabilitazione della 2FA",
+      error,
+    });
   }
-);
+});
 
 // API per recuperare un utente per ID
 router.get("/:id", async (req, res) => {
@@ -108,14 +110,14 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   const { referralLink, linkAzienda, linkVideo } = req.body;
 
   try {
     const utente = await Utente.findByPk(id);
     if (!utente) {
-      return res.status(404).json({ message: 'Utente non trovato' });
+      return res.status(404).json({ message: "Utente non trovato" });
     }
 
     await utente.update({
@@ -126,22 +128,37 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     res.json(utente);
   } catch (error) {
-    res.status(500).json({ message: 'Errore del server', error });
+    res.status(500).json({ message: "Errore del server", error });
   }
 });
 
-
 router.post("/disponibilita", async (req, res) => {
   const { emails = [] } = req.body;
-  const name = req.user?.name; 
+  const name = req.user?.name;
   const emailUser = req.user?.email;
   const id = req.user?.id;
   try {
+    const teamCliente = await Team.findOne({
+      where: {
+        is_cliente: true,
+      },
+      include: [
+        {
+          model: UtenteTeam,
+          as: "team_id",
+          where: {
+            id_utente: id,
+          },
+        },
+      ],
+    });
+
     for (const email of emails) {
       // Genera il JWT
       const token = jwt.sign(
         {
           id: id,
+          team: teamCliente?.dataValues.id,
         },
         __JWT_SECRET__,
         { expiresIn: "1h" }
@@ -157,7 +174,6 @@ router.post("/disponibilita", async (req, res) => {
         text: `Controlla la disponibilità su ${confirmationUrl}`,
       });
     }
-
 
     res.send("Email inoltrate con successo!");
   } catch (err) {

@@ -110,9 +110,11 @@ router.post("/", async (req, res) => {
 
   const idUtente = req.user?.id;
 
+  const idTeam = req.user?.teamId || teamId;
+
   try {
     // Verifica se il team esiste
-    const team = await Team.findByPk(teamId);
+    const team = await Team.findByPk(idTeam);
 
     if (!team) {
       return res.status(404).json({ message: "Team non trovato" });
