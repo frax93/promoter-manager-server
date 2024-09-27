@@ -5,6 +5,8 @@ import {
   __CLIENT_ID__,
   __CLIENT_SECRET__,
   __EMAIL_USER__,
+  __BACKEND_APP_URL__,
+  __WEB_APP_URL__,
 } from "../constants/environment";
 import Mail from "nodemailer/lib/mailer";
 
@@ -27,8 +29,8 @@ const getAccessToken = async () => {
   const { token } = await oauth2Client.getAccessToken();
   return token;
 };
-export const backendAppUrl = "https://promoter-manager-server-0e30fdbde338.herokuapp.com"; // URL della tua applicazione (DA METTERE COME ENV)
-export const webAppUrl = "https://promoter-manager-server-0e30fdbde338.herokuapp.com"; // URL della tua applicazione (DA METTERE COME ENV)
+export const backendAppUrl = __BACKEND_APP_URL__; // URL dell'applicazione backend 
+export const webAppUrl = __WEB_APP_URL__; // URL dell'applicazione web
 
 function createConfirmationLink(token: string) {
   return `${backendAppUrl}/api/autenticazione/conferma-email/${token}`;

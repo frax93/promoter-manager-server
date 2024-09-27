@@ -23,3 +23,7 @@ export const __CLIENT_SECRET__ = process.env.CLIENT_SECRET || 'GOCSPX-t3HoxT054Y
 
 export const __EMAIL_USER__ = process.env.EMAIL_USER || 'f41873773@gmail.com';
 
+/** Server urls */
+export const __WEB_APP_URL__ = process.env.WEB_APP_URL || 'https://promoter-manager-web-3d2066e2c8f2.herokuapp.com';
+export const __BACKEND_APP_URL__ = process.env.BACKEND_APP_URL || 'https://promoter-manager-server-0e30fdbde338.herokuapp.com';
+
