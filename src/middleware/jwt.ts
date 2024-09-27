@@ -3,8 +3,6 @@ import jwt from "jsonwebtoken";
 import { __JWT_SECRET__ } from "../constants/environment";
 import { JwtUser } from "../models/jwt-user";
 
-
-
 const jwtMiddleware = () => {
   return (req: Request, res: Response, next: NextFunction) => {
     // Recupera il token dall'header di autorizzazione

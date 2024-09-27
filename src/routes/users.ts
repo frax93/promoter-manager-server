@@ -135,10 +135,17 @@ router.post("/disponibilita", async (req, res) => {
   const { emails = [] } = req.body;
   const name = req.user?.name; 
   const emailUser = req.user?.email;
+  const id = req.user?.id;
   try {
     for (const email of emails) {
       // Genera il JWT
-      const token = jwt.sign({ email }, __JWT_SECRET__, { expiresIn: '1h' }); // Imposta la scadenza come preferisci
+      const token = jwt.sign(
+        {
+          id: id,
+        },
+        __JWT_SECRET__,
+        { expiresIn: "1h" }
+      ); // Imposta la scadenza come preferisci
 
       // Costruisci l'URL con il token nella query string
       const confirmationUrl = `${webAppUrl}?tempTk=${token}`;
