@@ -46,7 +46,7 @@ router.get("/utente", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { descrizione, importo, tipoId, guadagno_spesa } = req.body;
+  const { descrizione, importo, tipoId, guadagno_spesa, tipo_importo } = req.body;
 
   const utenteId = req.user?.id;
 
@@ -71,6 +71,8 @@ router.post("/", async (req, res) => {
       importo,
       utente_id: utenteId,
       tipo_id: tipoId,
+      tipo_importo,
+      guadagno_spesa,
     });
 
     // Rispondi con la spesa creata
