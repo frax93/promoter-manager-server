@@ -94,12 +94,7 @@ router.get("/utente", async (req, res) => {
           )
         : []
     );
-
-    utente.dataValues.team.forEach(
-      (team: { calendario: { dataValues: { eventi: Array<never> } } }) =>
-        console.log(team.calendario?.dataValues?.eventi)
-    );
-
+    
     res.status(200).json(eventi);
   } catch (err) {
     console.error(err);

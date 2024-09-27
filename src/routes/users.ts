@@ -3,7 +3,9 @@ import { Request, Response, Router } from "express";
 import jwtMiddleware from "../middleware/jwt";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
-import { appUrl, sendEmail } from "../utils/send-email";
+import { sendEmail, webAppUrl } from "../utils/send-email";
+import { __JWT_SECRET__ } from "../constants/environment";
+import jwt from "jsonwebtoken";
 
 const router = Router();
 
@@ -135,13 +137,20 @@ router.post("/disponibilita", async (req, res) => {
   const emailUser = req.user?.email;
   try {
     for (const email of emails) {
+      // Genera il JWT
+      const token = jwt.sign({ email }, __JWT_SECRET__, { expiresIn: '1h' }); // Imposta la scadenza come preferisci
+
+      // Costruisci l'URL con il token nella query string
+      const confirmationUrl = `${webAppUrl}?tempTk=${token}`;
+
       // Invia l'email di conferma
       await sendEmail({
         to: email,
         subject: `Disponibilità utente ${name} - ${emailUser}`,
-        text: ` Controlla la disponibilità su ${appUrl}/calendar`,
+        text: `Controlla la disponibilità su ${confirmationUrl}`,
       });
     }
+
 
     res.send("Email inoltrate con successo!");
   } catch (err) {

@@ -25,8 +25,6 @@ app.use(cors({
 }));
 
 app.use(bodyParser.json());
-app.use(express.static('public'));
-
 
 // Esegue la funzione ogni minuto
 cron.schedule('* * * * *', async () => {
