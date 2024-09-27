@@ -82,7 +82,7 @@ router.post("/login", async (req, res) => {
       {
         id: utente.dataValues.id,
         email: utente.dataValues.email,
-        nome: utente.dataValues.nome,
+        name: utente.dataValues.nome,
       },
       __JWT_SECRET__,
       {
