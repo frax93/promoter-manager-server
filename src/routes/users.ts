@@ -143,7 +143,7 @@ router.post("/disponibilita", async (req, res) => {
       include: [
         {
           model: Team,
-          as: "team_id",
+          as: "utenti",
           where: {
             is_cliente: true,
           },
