@@ -23,6 +23,10 @@ const Spesa = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    tipo_importo: {
+      type: DataTypes.STRING,
+      defaultValue: "EUR",
+    },
   },
   {
     tableName: "spese",

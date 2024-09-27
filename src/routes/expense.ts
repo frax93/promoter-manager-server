@@ -88,7 +88,8 @@ router.post("/", async (req, res) => {
 // PUT /spesa/:id - Aggiorna una spesa
 router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { descrizione, importo, tipoId } = req.body;
+  const { descrizione, importo, tipoId, tipo_importo } =
+    req.body;
 
   try {
     const spesa = await Spesa.findByPk(id);
@@ -100,6 +101,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       descrizione,
       importo,
       tipo_id: tipoId,
+      tipo_importo,
     });
     res.json(spesa);
   } catch (error) {
