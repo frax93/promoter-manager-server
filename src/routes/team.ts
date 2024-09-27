@@ -36,7 +36,6 @@ router.get("/utente", async (req, res) => {
           as: "team", // Alias dell'associazione
           where: {
             attivo: true,
-            is_cliente: false,
           },
           include: [
             {
