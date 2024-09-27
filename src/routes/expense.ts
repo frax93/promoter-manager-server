@@ -46,7 +46,7 @@ router.get("/utente", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { descrizione, importo, tipoId } = req.body;
+  const { descrizione, importo, tipoId, guadagno_spesa } = req.body;
 
   const utenteId = req.user?.id;
 
@@ -57,12 +57,14 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ message: "Utente non trovato" });
     }
 
-    // Verifica se l'evento esiste
-    const tipo = await Tipo.findByPk(tipoId);
-    if (!tipo) {
-      return res.status(404).json({ message: "Tipo non trovato" });
+    if (!guadagno_spesa) {
+      // Verifica se il tipo esiste
+      const tipo = await Tipo.findByPk(tipoId);
+      if (!tipo) {
+        return res.status(404).json({ message: "Tipo non trovato" });
+      }
     }
-
+    
     // Crea la nuova spesa associata all'utente e all'evento
     const nuovaSpesa = await Spesa.create({
       descrizione,

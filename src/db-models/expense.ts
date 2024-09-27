@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../utils/sequelize";
-import { Evento } from "./event";
 import { Tipo } from "./type";
 import { Utente } from "./user";
 
@@ -19,6 +18,10 @@ const Spesa = sequelize.define(
     descrizione: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    guadagno_spesa: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {
