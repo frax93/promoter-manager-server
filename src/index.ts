@@ -17,10 +17,22 @@ import { checkAndSendNoteReminders } from './utils/send-push';
 
 const app = express();
 
+const allowedOrigins = [__ORIGIN__, 'https://promoter-manager-web-3d2066e2c8f2.herokuapp.com'];
 
 // Middleware
 app.use(cors({
-    origin: __ORIGIN__,
+    origin: function (origin, callback) {
+      // Permetti le richieste senza origine (ad esempio, richieste da Postman)
+      if (!origin) return callback(null, true);
+  
+      // Controlla se l'origine è nell'array delle origini consentite
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        // Se l'origine non è consentita, restituisci un errore
+        return callback(new Error('Non consentito dall\'origine CORS'));
+      }
+    },
     credentials: true,
 }));
 
