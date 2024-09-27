@@ -140,7 +140,7 @@ router.post("/", async (req, res) => {
 
     // Trova il calendario associato al team
     const calendario = await Calendario.findOne({
-      where: { team_id: teamId },
+      where: { team_id: idTeam },
     });
 
     if (!calendario) {
@@ -154,7 +154,7 @@ router.post("/", async (req, res) => {
       data_inizio,
       data_fine,
       calendario_id: calendario.dataValues.id,
-      team_id: teamId,
+      team_id: idTeam,
       utente_id: idUtente,
     });
 

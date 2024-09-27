@@ -13,6 +13,7 @@ import { Team } from "../db-models/team";
 import { UtenteTeam } from "../db-models/user-team";
 import { TeamModel } from "../models/team";
 import { clientTeam } from "../constants/client-team";
+import { Calendario } from "../db-models/calendar";
 
 const router = express.Router();
 router.post("/verifica-utenza", async (req, res) => {
@@ -132,6 +133,12 @@ router.post("/registrazione", async (req, res) => {
     // Associa l'utente al team
     await UtenteTeam.create({
       utente_id: nuovoUtente.dataValues.id,
+      team_id: nuovoTeam.dataValues.id,
+    });
+
+    await Calendario.create({
+      nome: `Calendario ${nome}`,
+      descrizione: `Calendario principale per ${nome}`,
       team_id: nuovoTeam.dataValues.id,
     });
 
