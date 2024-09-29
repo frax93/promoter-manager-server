@@ -133,7 +133,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 });
 
 router.post("/disponibilita", async (req, res) => {
-  const { emails = [] } = req.body;
+  const { emails = [], token } = req.body;
   const name = req.user?.name;
   const emailUser = req.user?.email;
   const id = req.user?.id;
@@ -153,6 +153,16 @@ router.post("/disponibilita", async (req, res) => {
         },
       ],
     });
+
+    await Utente.update(
+      { push_token: token }, // Dati che vuoi aggiornare
+      {
+        where: {
+          id_utente: id, // Condizione where
+        },
+      }
+    );
+
     for (const email of emails) {
       // Genera il JWT
       const token = jwt.sign(

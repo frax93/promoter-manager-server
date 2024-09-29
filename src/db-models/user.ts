@@ -58,6 +58,10 @@ const Utente = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    push_token: {
+      type: DataTypes.STRING,
+      defaultValue: null,
+    },
   },
   {
     tableName: "utenti",

@@ -10,6 +10,7 @@ import { EventoModel } from "../models/event";
 import { TeamModel } from "../models/team";
 import { Note } from "../db-models/note";
 import { NoteModel } from "../models/note";
+import { sendPushNotification } from "../utils/send-push";
 
 const router = Router();
 
@@ -157,6 +158,13 @@ router.post("/", async (req, res) => {
       team_id: idTeam,
       utente_id: idUtente,
     });
+
+    if (utente.dataValues.push_token && req.user?.team) {
+      await sendPushNotification(
+        utente.dataValues.push_token,
+        "è stato aggiunto un nuovo evento al calendario"
+      );
+    }
 
     // Rispondi con l'evento creato
     res.status(201).json(nuovoEvento);
