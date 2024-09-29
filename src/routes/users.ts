@@ -158,7 +158,7 @@ router.post("/disponibilita", async (req, res) => {
       { push_token: token }, // Dati che vuoi aggiornare
       {
         where: {
-          id_utente: id, // Condizione where
+          id: id, // Condizione where
         },
       }
     );
