@@ -192,4 +192,25 @@ router.post("/disponibilita", async (req, res) => {
   }
 });
 
+router.post("/cambia-password", async (req, res) => {
+  const { password } = req.body;
+  const id = req.user?.id;
+  try {
+
+    await Utente.update(
+      { password }, // Dati che vuoi aggiornare
+      {
+        where: {
+          id: id, // Condizione where
+        },
+      }
+    );
+
+    res.send("Cambio password effettuato con successo!");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Errore");
+  }
+});
+
 export default router;

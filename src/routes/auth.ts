@@ -7,7 +7,11 @@ import speakeasy from "speakeasy";
 import { UserModel } from "../models/user";
 import { Model } from "sequelize";
 import { generateConfirmationToken } from "../utils/generate-confirmation-token";
-import { sendConfirmationEmail, sendEmail } from "../utils/send-email";
+import {
+  sendConfirmationEmail,
+  sendEmail,
+  webAppUrl,
+} from "../utils/send-email";
 import { DateTime } from "luxon";
 import { Team } from "../db-models/team";
 import { UtenteTeam } from "../db-models/user-team";
@@ -224,6 +228,38 @@ router.post("/reinvia-conferma", async (req, res) => {
       .send(
         "Nuova email di conferma inviata. Controlla la tua casella di posta."
       );
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Errore");
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user: Model<UserModel> | null = await Utente.findOne({
+      where: { email },
+    });
+    // Genera il JWT
+    const token = jwt.sign(
+      {
+        id: user?.dataValues.id,
+      },
+      __JWT_SECRET__,
+      { expiresIn: "15min" }
+    ); // Imposta la scadenza come preferisci
+
+    // Costruisci l'URL con il token nella query string
+    const confirmationUrl = `${webAppUrl}?tempTk=${token}`;
+
+    // Invia l'email di conferma
+    await sendEmail({
+      to: email,
+      subject: `Reset password`,
+      text: `Hai 15 minuti per cambiare la password su ${confirmationUrl}`,
+    });
+
+    res.send("Email cambio password inoltrata con successo!");
   } catch (err) {
     console.error(err);
     res.status(500).send("Errore");
