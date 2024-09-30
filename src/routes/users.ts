@@ -175,7 +175,7 @@ router.post("/disponibilita", async (req, res) => {
       ); // Imposta la scadenza come preferisci
 
       // Costruisci l'URL con il token nella query string
-      const confirmationUrl = `${webAppUrl}?tempTk=${token}`;
+      const confirmationUrl = `${webAppUrl}/disponibilità?tempTk=${token}`;
 
       // Invia l'email di conferma
       await sendEmail({
