@@ -16,7 +16,7 @@ const router = Router();
 
 router.use(jwtMiddleware());
 
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const eventi = await Evento.findAll();
     res.json(eventi);
@@ -26,7 +26,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:id/spese", async (req, res) => {
+router.get("/:id/spese", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const spese = await Spesa.findAll({
@@ -40,7 +40,7 @@ router.get("/:id/spese", async (req, res) => {
 });
 
 // Route per ottenere tutti gli eventi di un utente
-router.get("/utente", async (req, res) => {
+router.get("/utente", async (req: Request, res: Response) => {
   const idUtente = req.user?.id;
 
   try {
@@ -106,7 +106,7 @@ router.get("/utente", async (req, res) => {
 });
 
 // Endpoint per creare un nuovo evento associato a un calendario (e quindi a un team)
-router.post("/", async (req, res) => {
+router.post("/", async (req: Request, res: Response) => {
   const { titolo, descrizione, data_inizio, data_fine, teamId } = req.body;
 
   const idUtente = req.user?.id;

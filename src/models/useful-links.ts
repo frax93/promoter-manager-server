@@ -1,4 +1,4 @@
-export interface UsefulLink {
+export interface UsefulLinkModel {
   id: number;
   url: string;
 }

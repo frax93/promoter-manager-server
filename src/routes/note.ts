@@ -2,12 +2,13 @@ import { Note } from "../db-models/note";
 import { Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import jwtMiddleware from "../middleware/jwt";
+import { Priority } from "../db-models/priority";
 
 const router = Router();
 
 router.use(jwtMiddleware());
 
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request,res: Response) => {
   try {
     const note = await Note.findAll({
       order: [['data_creazione', 'DESC']]
@@ -20,11 +21,15 @@ router.get("/", async (req, res) => {
 });
 
 // API per recuperare le note di un utente
-router.get("/utente", async (req, res) => {
+router.get("/utente", async (req: Request,res: Response) => {
   const idUtente = req.user?.id;
   try {
     const note = await Note.findAll({
       where: { utente_id: idUtente },
+      include: [{
+        model: Priority,
+        as: 'priority'
+      }]
     });
     res.json(note);
   } catch (err) {
@@ -34,7 +39,7 @@ router.get("/utente", async (req, res) => {
 });
 
 // Endpoint per creare una nuova nota associata a un utente
-router.post("/", async (req, res) => {
+router.post("/", async (req: Request,res: Response) => {
   const { contenuto, reminderDate, token } = req.body;
   const idUtente = req.user?.id;
 

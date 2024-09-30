@@ -13,7 +13,7 @@ const router = Router();
 
 router.use(jwtMiddleware());
 
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const teams = await Team.findAll();
     res.json(teams);
@@ -24,7 +24,7 @@ router.get("/", async (req, res) => {
 });
 
 // Route per ottenere tutti i team di un utente
-router.get("/utente", async (req, res) => {
+router.get("/utente", async (req: Request, res: Response) => {
   const idUtente = req.user?.id;
 
   try {
@@ -63,7 +63,7 @@ router.get("/utente", async (req, res) => {
 });
 
 // API per recuperare un team per ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const team = await Team.findByPk(id);
@@ -77,7 +77,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/utente", async (req, res) => {
+router.post("/utente", async (req: Request, res: Response) => {
   const { nome, descrizione, colore, utentiIds } = req.body;
   const idUtente = req.user?.id;
 

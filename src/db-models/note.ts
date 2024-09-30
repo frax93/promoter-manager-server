@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../utils/sequelize";
+import { Priority } from "./priority";
 
 const Note = sequelize.define(
   "Note",
@@ -28,11 +29,26 @@ const Note = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true, // Token del dispositivo per notifiche
     },
+    priority_id: {
+      // Definisci la chiave esterna per la priorità
+      type: DataTypes.INTEGER,
+      allowNull: true, // Può essere null per rappresentare la relazione 0 o 1
+      references: {
+        model: Priority,
+        key: "id", // Colonna di riferimento nel modello Priority
+      },
+    },
   },
   {
     tableName: "note",
   }
 );
+
+Note.hasOne(Priority, {
+  foreignKey: "priority_id",
+  as: "priority",
+});
+
 
 export { Note };
 

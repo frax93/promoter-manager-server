@@ -1,7 +1,6 @@
 import { Spesa } from "../db-models/expense";
 import { Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
-import { Evento } from "../db-models/event";
 import { Tipo } from "../db-models/type";
 import jwtMiddleware from "../middleware/jwt";
 
@@ -9,7 +8,7 @@ const router = Router();
 
 router.use(jwtMiddleware());
 
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const spese = await Spesa.findAll({
       include: [
@@ -27,7 +26,7 @@ router.get("/", async (req, res) => {
 });
 
 // API per recuperare le note di un utente
-router.get("/utente", async (req, res) => {
+router.get("/utente", async (req: Request, res: Response) => {
   try {
     const spese = await Spesa.findAll({
       where: { utente_id: req.user?.id },
@@ -45,7 +44,7 @@ router.get("/utente", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", async (req: Request, res: Response) => {
   const { descrizione, importo, tipoId, guadagno_spesa, tipo_importo } = req.body;
 
   const utenteId = req.user?.id;

@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
 import jwtMiddleware from "../middleware/jwt";
 import { LinkUtili } from "../db-models/useful-links";
-import { UsefulLink } from "../models/useful-links";
+import { UsefulLinkModel } from "../models/useful-links";
 import { Model } from "sequelize";
 
 const router = Router();
@@ -24,7 +24,7 @@ router.get("/utente", async (req: Request, res: Response) => {
 
 router.put(
   "/",
-  async (req: Request<{ links: Array<UsefulLink> }>, res: Response) => {
+  async (req: Request<{ links: Array<UsefulLinkModel> }>, res: Response) => {
     const { links } = req.body; // links è un array di oggetti { id, url }
     const userId = req.user?.id;
 
@@ -34,7 +34,7 @@ router.put(
 
     try {
       // Recupera i link esistenti per l'utente
-      const existingLinks: Model<UsefulLink>[] | null = await LinkUtili.findAll(
+      const existingLinks: Model<UsefulLinkModel>[] | null = await LinkUtili.findAll(
         {
           where: { utente_id: userId },
         }

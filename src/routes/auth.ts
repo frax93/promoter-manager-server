@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Utente } from "../db-models/user";
@@ -20,7 +20,7 @@ import { clientTeam } from "../constants/client-team";
 import { Calendario } from "../db-models/calendar";
 
 const router = express.Router();
-router.post("/verifica-utenza", async (req, res) => {
+router.post("/verifica-utenza", async (req: Request,res: Response) => {
   const { email, password } = req.body;
 
   try {
@@ -49,7 +49,7 @@ router.post("/verifica-utenza", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", async (req: Request,res: Response) => {
   const { email, password, token2FA } = req.body;
 
   try {
@@ -107,7 +107,7 @@ router.post("/login", async (req, res) => {
 });
 
 // API per creare un nuovo utente
-router.post("/registrazione", async (req, res) => {
+router.post("/registrazione", async (req: Request,res: Response) => {
   const { nome, email, password } = req.body;
   try {
     // Verifica se l'email esiste già
@@ -156,7 +156,7 @@ router.post("/registrazione", async (req, res) => {
   }
 });
 
-router.get("/conferma-email/:token", async (req, res) => {
+router.get("/conferma-email/:token", async (req: Request,res: Response) => {
   const { token } = req.params;
 
   try {
@@ -190,7 +190,7 @@ router.get("/conferma-email/:token", async (req, res) => {
   }
 });
 
-router.post("/reinvia-conferma", async (req, res) => {
+router.post("/reinvia-conferma", async (req: Request,res: Response) => {
   const { email } = req.body;
 
   try {
@@ -234,7 +234,7 @@ router.post("/reinvia-conferma", async (req, res) => {
   }
 });
 
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", async (req: Request, res: Response) => {
   const { email } = req.body;
   try {
     const user: Model<UserModel> | null = await Utente.findOne({

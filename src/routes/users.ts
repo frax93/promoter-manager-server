@@ -15,7 +15,7 @@ const router = Router();
 
 router.use(jwtMiddleware());
 
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const utenti = await Utente.findAll();
     res.json(utenti);
@@ -98,7 +98,7 @@ router.get("/disabilita-2fa", async (req: Request, res: Response) => {
 });
 
 // API per recuperare un utente per ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const utente = await Utente.findByPk(id);
@@ -134,7 +134,7 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/disponibilita", async (req, res) => {
+router.post("/disponibilita", async (req: Request, res: Response) => {
   const { emails = [], token } = req.body;
   const name = req.user?.name;
   const emailUser = req.user?.email;
@@ -194,7 +194,7 @@ router.post("/disponibilita", async (req, res) => {
   }
 });
 
-router.post("/cambia-password", async (req, res) => {
+router.post("/cambia-password", async (req: Request, res: Response) => {
   const { password } = req.body;
   const id = req.user?.id;
   try {
