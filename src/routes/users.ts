@@ -215,7 +215,7 @@ router.post("/cambia-password", async (req, res) => {
       utente.dataValues.password
     );
 
-    if (!passwordIsValid) {
+    if (passwordIsValid) {
       return res
         .status(401)
         .json({
