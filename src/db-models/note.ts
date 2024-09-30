@@ -44,7 +44,7 @@ const Note = sequelize.define(
   }
 );
 
-Note.hasOne(Priority, {
+Note.belongsTo(Priority, {
   foreignKey: "priority_id",
   as: "priority",
 });
