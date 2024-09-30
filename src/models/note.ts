@@ -1,8 +1,7 @@
 export interface NoteModel {
   id: number;
   contenuto: string;
-  priorita_id?: number;
-  priority?: number;
+  priority_id?: number;
   reminder_date: Date | null;
   token?: string;
 }

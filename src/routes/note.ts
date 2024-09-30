@@ -54,7 +54,7 @@ router.post("/", async (req: Request,res: Response) => {
 
     // Crea la nuova nota associata all'utente
     const nuovaNota = await Note.create({
-      priority: priorita,
+      priority_id: priorita,
       contenuto,
       utente_id: idUtente,
       reminder_date: reminderDate ? new Date(reminderDate) : null, 
@@ -107,7 +107,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
 
     await note.update({
-      priority: priorita,
+      priority_id: priorita,
       contenuto,
       reminder_date: reminderDate ? new Date(reminderDate) : null, 
     });
