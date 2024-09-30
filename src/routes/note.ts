@@ -3,6 +3,8 @@ import { Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import jwtMiddleware from "../middleware/jwt";
 import { Priority } from "../db-models/priority";
+import { NoteModel } from "../models/note";
+import { Model } from "sequelize";
 
 const router = Router();
 
@@ -40,7 +42,7 @@ router.get("/utente", async (req: Request,res: Response) => {
 
 // Endpoint per creare una nuova nota associata a un utente
 router.post("/", async (req: Request,res: Response) => {
-  const { contenuto, reminderDate, token } = req.body;
+  const { contenuto, reminderDate, token, priorita } = req.body;
   const idUtente = req.user?.id;
 
   try {
@@ -52,6 +54,7 @@ router.post("/", async (req: Request,res: Response) => {
 
     // Crea la nuova nota associata all'utente
     const nuovaNota = await Note.create({
+      priorita_id: priorita,
       contenuto,
       utente_id: idUtente,
       reminder_date: reminderDate ? new Date(reminderDate) : null, 
@@ -76,7 +79,7 @@ router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
 
   try {
     const note = await Note.findByPk(id);
-    console.log(note, completed, id);
+
     if (!note) {
       return res.status(404).json({ error: 'Nota non trovata.' });
     }
@@ -95,15 +98,16 @@ router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
 // PUT /note/:id - Aggiorna una nota
 router.put('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { contenuto, reminderDate } = req.body;
+  const { contenuto, reminderDate, priorita } = req.body;
 
   try {
-    const note = await Note.findByPk(id);
+    const note: Model<NoteModel> | null = await Note.findByPk(id);
     if (!note) {
       return res.status(404).json({ message: 'Nota non trovata' });
     }
 
     await note.update({
+      priorita_id: priorita,
       contenuto,
       reminder_date: reminderDate ? new Date(reminderDate) : null, 
     });
