@@ -7,7 +7,9 @@ import { sendEmail, webAppUrl } from "../utils/send-email";
 import { __JWT_SECRET__ } from "../constants/environment";
 import jwt from "jsonwebtoken";
 import { Team } from "../db-models/team";
-import { UtenteTeam } from "../db-models/user-team";
+import bcrypt from 'bcryptjs';
+import { UserModel } from "../models/user";
+import { Model } from "sequelize";
 
 const router = Router();
 
@@ -196,9 +198,33 @@ router.post("/cambia-password", async (req, res) => {
   const { password } = req.body;
   const id = req.user?.id;
   try {
+    const salt = await bcrypt.genSalt(10);
+    
+    const passwordCrypted = await bcrypt.hash(
+      password,
+      salt
+    );
+
+    const utente: Model<UserModel> | null = await Utente.findByPk(id);
+    if (!utente) {
+      return res.status(404).json({ message: "Utente non trovato" });
+    }
+
+    const passwordIsValid = await bcrypt.compare(
+      password,
+      utente.dataValues.password
+    );
+
+    if (!passwordIsValid) {
+      return res
+        .status(401)
+        .json({
+          message: "Password uguale alla precedente, scegline un'altra",
+        });
+    }
 
     await Utente.update(
-      { password }, // Dati che vuoi aggiornare
+      { password: passwordCrypted }, // Dati che vuoi aggiornare
       {
         where: {
           id: id, // Condizione where
