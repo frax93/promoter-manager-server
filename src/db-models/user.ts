@@ -84,6 +84,15 @@ const Utente = sequelize.define(
           );
         }
       },
+      beforeSave: async (utente) => {
+        if (utente.dataValues.password) {
+          const salt = await bcrypt.genSalt(10);
+          utente.dataValues.password = await bcrypt.hash(
+            utente.dataValues.password,
+            salt
+          );
+        }
+      },
     },
   }
 );
