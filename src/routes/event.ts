@@ -327,7 +327,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
         ) {
           await sendPushNotification(
             utenteTeam.dataValues.push_token,
-            `è stato modificato un evento nel calendario da ${req.user?.name}`
+            `è stato eliminato un evento nel calendario da ${req.user?.name}`
           );
         }
       }
