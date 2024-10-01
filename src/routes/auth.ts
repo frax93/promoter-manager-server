@@ -20,6 +20,8 @@ import { clientTeam } from "../constants/client-team";
 import { Calendario } from "../db-models/calendar";
 
 const router = express.Router();
+
+// API per verificare utenza
 router.post("/verifica-utenza", async (req: Request,res: Response) => {
   const { email, password } = req.body;
 
@@ -149,7 +151,7 @@ router.post("/registrazione", async (req: Request,res: Response) => {
     // Invia l'email di conferma
     await sendConfirmationEmail(email, confirmationToken);
 
-    res.status(201).json(nuovoUtente);
+    res.status(201).json(nuovoUtente.dataValues);
   } catch (err) {
     console.error(err);
     res.status(500).send("Errore nella creazione dell'utente");

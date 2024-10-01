@@ -13,3 +13,5 @@ export const mockToken = jwt.sign(
   { id: mockUser.id, email: mockUser.email, name: mockUser.nome },
   __JWT_SECRET__
 );
+
+export const mockedFakeToken = 'valid-token';
