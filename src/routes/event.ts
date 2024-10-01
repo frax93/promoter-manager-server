@@ -11,7 +11,6 @@ import { TeamModel } from "../models/team";
 import { Note } from "../db-models/note";
 import { NoteModel } from "../models/note";
 import { sendPushNotification } from "../utils/send-push";
-import { UserModel } from "../models/user";
 
 const router = Router();
 
@@ -245,13 +244,13 @@ router.put("/:id", async (req: Request, res: Response) => {
 
 
     // Aggiorna l'evento con i nuovi dati
-    await evento.update({
+    const eventoUpdated = await evento.update({
       titolo: titolo || evento.dataValues?.titolo,
       descrizione: descrizione || evento.dataValues?.descrizione,
       data_inizio: data_inizio || evento.dataValues?.data_inizio,
       data_fine: data_fine || evento.dataValues?.data_fine,
       calendario_id: evento.dataValues?.calendario_id,
-      note_id: nuovaNota.dataValues.id,
+      note_id: nuovaNota.dataValues?.id,
     });
 
     if (team?.dataValues?.utenti && team?.dataValues?.utenti?.length > 1) {
@@ -269,7 +268,7 @@ router.put("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    return res.json(evento);
+    return res.json(eventoUpdated);
   } catch (error) {
     console.error("Errore durante la modifica dell'evento:", error);
     return res

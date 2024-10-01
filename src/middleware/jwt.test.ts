@@ -3,6 +3,13 @@ import jwt from "jsonwebtoken";
 import { __JWT_SECRET__ } from "../constants/environment";
 import { JwtUser } from "../models/jwt-user";
 import jwtMiddleware from "./jwt";
+import { mockedFakeToken } from "../mocks/jest-logged-user";
+
+const jwtToken = jest.fn().mockResolvedValue(mockedFakeToken);
+(jwt.sign as jest.Mock) = jwtToken;
+
+const jwtTokenVerify = jest.fn().mockResolvedValue(true);
+(jwt.verify as jest.Mock) = jwtTokenVerify;
 
 describe("jwtMiddleware", () => {
   let mockRequest: Partial<Request>;

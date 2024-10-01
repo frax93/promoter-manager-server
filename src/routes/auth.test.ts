@@ -14,7 +14,14 @@ import { DateTime } from "luxon";
 jest.mock("../utils/generate-confirmation-token");
 jest.mock("../utils/send-email");
 
+const jwtToken = jest.fn().mockResolvedValue(mockedFakeToken);
+(jwt.sign as jest.Mock) = jwtToken;
+
+const jwtTokenVerify = jest.fn().mockResolvedValue(true);
+(jwt.verify as jest.Mock) = jwtTokenVerify;
+
 describe("Test API Auth", () => {
+
   // POST verifica utenza
   describe(`POST ${__BASE_PATH__}/autenticazione/verifica-utenza`, () => {
     it("Dovrebbe restituire 200 se l'utente viene trovato e la password è valida", async () => {

@@ -2,8 +2,6 @@ import { Server } from "http";
 import { app } from ".";
 import { __PORT__ } from "./constants/environment";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { mockedFakeToken } from "./mocks/jest-logged-user";
 
 let server: Server;
 
@@ -24,11 +22,7 @@ const bcryptCompareRejected = jest.fn().mockRejectedValue(new Error('Random erro
 const bcryptCompare = jest.fn().mockResolvedValue(true);
 (bcrypt.compare as jest.Mock) = bcryptCompare;
 
-const jwtToken = jest.fn().mockResolvedValue(mockedFakeToken);
-(jwt.sign as jest.Mock) = jwtToken;
 
-const jwtTokenVerify = jest.fn().mockResolvedValue(true);
-(jwt.verify as jest.Mock) = jwtTokenVerify;
 
 // Mock della connessione al db
 jest.mock("./utils/sequelize", () => ({
