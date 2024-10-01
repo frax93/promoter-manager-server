@@ -14,5 +14,6 @@ export interface UserModel {
   scadenza_token: string;
   email_confermata: boolean;
   team: Array<TeamModel>;
+  push_token: string;
 }
   

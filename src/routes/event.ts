@@ -11,6 +11,7 @@ import { TeamModel } from "../models/team";
 import { Note } from "../db-models/note";
 import { NoteModel } from "../models/note";
 import { sendPushNotification } from "../utils/send-push";
+import { UserModel } from "../models/user";
 
 const router = Router();
 
@@ -115,7 +116,14 @@ router.post("/", async (req: Request, res: Response) => {
 
   try {
     // Verifica se il team esiste
-    const team = await Team.findByPk(idTeam);
+    const team = await Team.findByPk(idTeam, {
+      include: [
+        {
+          model: Utente,
+          as: "utenti", // Alias dell'associazione
+        },
+      ],
+    });
 
     if (!team) {
       return res.status(404).json({ message: "Team non trovato" });
@@ -158,6 +166,21 @@ router.post("/", async (req: Request, res: Response) => {
       team_id: idTeam,
       utente_id: idUtente,
     });
+
+    if (team.dataValues.utenti?.length > 1) {
+      const usersTeam = team.dataValues.utenti || [];
+      for (const utenteTeam of usersTeam) {
+        if (
+          utenteTeam.dataValues.push_token &&
+          utenteTeam.dataValues.id !== idUtente
+        ) {
+          await sendPushNotification(
+            utenteTeam.dataValues.push_token,
+            `è stato aggiunto un nuovo evento al calendario ${utente.dataValues.nome}`
+          );
+        }
+      }
+    }
 
     if (utente.dataValues.push_token && req.user?.team) {
       await sendPushNotification(
@@ -211,7 +234,7 @@ router.put("/:id", async (req: Request, res: Response) => {
     if (!isUserInTeam) {
       return res
         .status(403)
-        .json({ message: "Non sei autorizzato a eliminare questo evento" });
+        .json({ message: "Non sei autorizzato a modificare questo evento" });
     }
 
      // Crea la nuova nota associata all'utente
@@ -230,6 +253,21 @@ router.put("/:id", async (req: Request, res: Response) => {
       calendario_id: evento.dataValues?.calendario_id,
       note_id: nuovaNota.dataValues.id,
     });
+
+    if (team?.dataValues?.utenti && team?.dataValues?.utenti?.length > 1) {
+      const usersTeam = team.dataValues.utenti || [];
+      for (const utenteTeam of usersTeam) {
+        if (
+          utenteTeam.dataValues.push_token &&
+          utenteTeam.dataValues.id !== idLoggedUser
+        ) {
+          await sendPushNotification(
+            utenteTeam.dataValues.push_token,
+            `è stato modificato un evento nel calendario da ${req.user?.name}`
+          );
+        }
+      }
+    }
 
     return res.json(evento);
   } catch (error) {
@@ -279,6 +317,21 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     // Elimina l'evento
     await evento.destroy();
+
+    if (team?.dataValues?.utenti && team?.dataValues?.utenti?.length > 1) {
+      const usersTeam = team.dataValues.utenti || [];
+      for (const utenteTeam of usersTeam) {
+        if (
+          utenteTeam.dataValues.push_token &&
+          utenteTeam.dataValues.id !== idLoggedUser
+        ) {
+          await sendPushNotification(
+            utenteTeam.dataValues.push_token,
+            `è stato modificato un evento nel calendario da ${req.user?.name}`
+          );
+        }
+      }
+    }
 
     return res.json({ message: "Evento eliminato con successo" });
   } catch (error) {
