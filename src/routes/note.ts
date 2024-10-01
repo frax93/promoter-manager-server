@@ -84,11 +84,15 @@ router.patch('/:id/marca-completata', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Nota non trovata.' });
     }
 
-    await note.update({
+    const responseNote = await note.update({
       completed,
     });
 
-    res.status(200).json(note);
+    const response = {
+      ...responseNote,
+    };
+
+    res.status(200).json(response);
   } catch (error) {
     console.error('Errore nel marcare la nota come completata:', error);
     res.status(500).json({ error: 'Errore del server.' });
@@ -101,17 +105,25 @@ router.put('/:id', async (req: Request, res: Response) => {
   const { contenuto, reminderDate, priorita } = req.body;
 
   try {
-    const note: Model<NoteModel> | null = await Note.findByPk(id);
+    let note: Model<NoteModel> | null = await Note.findByPk(id);
     if (!note) {
       return res.status(404).json({ message: 'Nota non trovata' });
     }
 
-    await note.update({
+    const responseNote = await note.update({
       priority_id: priorita,
       contenuto,
       reminder_date: reminderDate ? new Date(reminderDate) : null, 
     });
-    res.json(note);
+
+    const response = {
+      ...responseNote,
+      contenuto,
+      reminder_date: reminderDate,
+      priorita,
+    };
+
+    res.status(200).json(response);
   } catch (error) {
     res.status(500).json({ message: 'Errore del server', error });
   }
@@ -128,7 +140,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     }
 
     await note.destroy();
-    res.json({ message: 'Nota eliminata' });
+    res.status(200).json({ message: 'Nota eliminata' });
   } catch (error) {
     res.status(500).json({ message: 'Errore del server', error });
   }

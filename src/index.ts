@@ -39,11 +39,12 @@ app.use(cors({
 
 app.use(bodyParser.json());
 
-// Esegue la funzione ogni minuto
-cron.schedule('* * * * *', async () => {
-  console.log('Checking for note reminders to send...');
-  await checkAndSendNoteReminders();
-});
+if (process.env.NODE_ENV !== 'test') {
+  cron.schedule('* * * * *', async () => {
+    console.log('Checking for note reminders to send...');
+    await checkAndSendNoteReminders();
+  });
+}
 
 const testDatabaseConnection = async () => {
     try {
@@ -69,6 +70,8 @@ app.use(`${__BASE_PATH__}/tipi`, typeRouter);
 app.use(`${__BASE_PATH__}/link-utili`, usefulLinksRouter);
 app.use(`${__BASE_PATH__}/priorita`, priorityRouter);
 
-app.listen(__PORT__, () => {
-  console.log(`Server running at http://localhost:${__PORT__}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(__PORT__, () => {
+    console.log(`Server running at http://localhost:${__PORT__}`);
+  });
+}
