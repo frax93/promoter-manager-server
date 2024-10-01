@@ -138,6 +138,7 @@ jest.mock("./db-models/useful-links", () => ({
 jest.mock("./db-models/type", () => ({
   Tipo: {
     findAll: jest.fn(),
+    findByPk: jest.fn(),
   },
 }));
 

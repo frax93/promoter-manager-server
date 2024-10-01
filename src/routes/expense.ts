@@ -96,13 +96,13 @@ router.put('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Spesa non trovata' });
     }
 
-    await spesa.update({
+    const spesaUpdated = await spesa.update({
       descrizione,
       importo,
       tipo_id: tipoId,
       tipo_importo,
     });
-    res.json(spesa);
+    res.json(spesaUpdated);
   } catch (error) {
     res.status(500).json({ message: 'Errore del server', error });
   }
@@ -121,7 +121,8 @@ router.delete('/:id', async (req: Request, res: Response) => {
     await spesa.destroy();
     res.json({ message: 'Spesa eliminata' });
   } catch (error) {
-    res.status(500).json({ message: 'Errore del server', error });
+    console.error(error);
+    res.status(500).json({ message: 'Errore del server' });
   }
 });
 
