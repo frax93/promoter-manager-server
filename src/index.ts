@@ -16,7 +16,7 @@ import { __BASE_PATH__, __ORIGIN__, __PORT__ } from './constants/environment';
 import cron from 'node-cron';
 import { checkAndSendNoteReminders } from './utils/send-push';
 
-const app = express();
+export const app = express();
 
 const allowedOrigins = [__ORIGIN__, 'https://promoter-manager-web-3d2066e2c8f2.herokuapp.com'];
 

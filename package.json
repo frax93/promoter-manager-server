@@ -7,7 +7,7 @@
     "debug": "npm run build && nodemon --inspect",
     "start": "node dist/index.js",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -39,6 +39,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.13",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/luxon": "^3.4.2",
     "@types/node": "^22.5.0",
@@ -46,7 +47,11 @@
     "@types/nodemailer": "^6.4.15",
     "@types/qrcode": "^1.5.5",
     "@types/speakeasy": "^2.0.10",
+    "@types/supertest": "^6.0.2",
+    "jest": "^29.7.0",
     "nodemon": "^3.1.4",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }
