@@ -84,6 +84,13 @@ jest.mock("./db-models/useful-links", () => ({
   },
 }));
 
+jest.mock("./db-models/type", () => ({
+  Tipo: {
+    // Mock delle funzioni di Sequelize
+    findAll: jest.fn(),
+  },
+}));
+
 // Funzione di setup globale per Jest (puoi utilizzare un file di setup separato)
 beforeEach(() => {
   jest.clearAllMocks(); // Ripulisci i mock prima di ogni test
