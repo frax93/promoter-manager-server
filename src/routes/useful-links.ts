@@ -49,7 +49,10 @@ router.put(
       for (const link of links) {
         if (link.id) {
           // Se il link esiste già, lo aggiorniamo
-          await LinkUtili.update({ url: link.url, descrizione: link.descrizione }, { where: { id: link.id } });
+          await LinkUtili.update(
+            { url: link.url, descrizione: link.descrizione },
+            { where: { id: link.id } }
+          );
           existingLinkIds.delete(link.id); // Rimuovi l'id dal set
         } else {
           // Crea un nuovo link

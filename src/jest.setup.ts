@@ -81,6 +81,11 @@ jest.mock("./db-models/useful-links", () => ({
   LinkUtili: {
     // Mock delle funzioni di Sequelize
     belongsTo: jest.fn(),
+    findAll: jest.fn(),
+    findByPk: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    destroy: jest.fn(),
   },
 }));
 
