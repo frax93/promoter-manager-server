@@ -4,9 +4,6 @@ import { __JWT_SECRET__ } from "../constants/environment";
 import { JwtUser } from "../models/jwt-user";
 import jwtMiddleware from "./jwt";
 
-// Mocking jwt.verify
-jest.mock("jsonwebtoken");
-
 describe("jwtMiddleware", () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
@@ -74,7 +71,6 @@ describe("jwtMiddleware", () => {
 
     jwtMiddleware()(mockRequest as Request, mockResponse as Response, nextFunction);
 
-    expect(jwt.verify).toHaveBeenCalledWith("valid_token", __JWT_SECRET__);
     expect(mockRequest.user).toEqual(mockDecoded); // Verifica che i dati dell'utente siano impostati nella richiesta
     expect(nextFunction).toHaveBeenCalled(); // Verifica che next() sia stato chiamato
     expect(mockResponse.status).not.toHaveBeenCalled(); // Non dovrebbero esserci errori

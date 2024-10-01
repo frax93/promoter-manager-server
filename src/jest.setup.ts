@@ -27,6 +27,9 @@ const bcryptCompare = jest.fn().mockResolvedValue(true);
 const jwtToken = jest.fn().mockResolvedValue(mockedFakeToken);
 (jwt.sign as jest.Mock) = jwtToken;
 
+const jwtTokenVerify = jest.fn().mockResolvedValue(true);
+(jwt.verify as jest.Mock) = jwtTokenVerify;
+
 // Mock della connessione al db
 jest.mock("./utils/sequelize", () => ({
   authenticate: jest.fn().mockResolvedValue(true),
