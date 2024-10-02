@@ -35,8 +35,9 @@ export const updateExpenseSchema = Joi.object<
   PromoterManagerRequest<UpdateExpenseRequestParams, UpdateExpenseRequestBody>
 >({
   params: Joi.object<UpdateExpenseRequestParams>().keys({
-    id: Joi.string().required().messages({
-      "string.empty": "L'ID della spesa è obbligatorio",
+    id: Joi.number().integer().required().messages({
+      "any.required": "Il parametro 'id' è obbligatorio",
+      "number.base": "'id' deve essere un numero intero",
     }),
   }),
   body: Joi.object<UpdateExpenseRequestBody>().keys({
@@ -55,8 +56,9 @@ export const deleteExpenseSchema = Joi.object<
   PromoterManagerRequest<DeleteExpenseRequestParams>
 >({
   params: Joi.object<DeleteExpenseRequestParams>().keys({
-    id: Joi.string().required().messages({
-      "string.empty": "L'ID della spesa è obbligatorio",
+    id: Joi.number().integer().required().messages({
+      "any.required": "Il parametro 'id' è obbligatorio",
+      "number.base": "'id' deve essere un numero intero",
     }),
   }),
 });

@@ -8,6 +8,10 @@ import { DateTime } from "luxon";
 import { Model } from "sequelize";
 import { TeamModel } from "../models/team";
 import { UserModel } from "../models/user";
+import { validateRequest } from "../utils/validate-schema";
+import { createTeamSchema, deleteTeamSchema, getTeamSchema, updateTeamSchema } from "../schema/team";
+import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
+import { CreateTeamBody, DeleteTeamParams, GetTeamParams, UpdateTeamBody, UpdateTeamParams } from "../types/team";
 
 const router = Router();
 
@@ -63,177 +67,200 @@ router.get("/utente", async (req: Request, res: Response) => {
 });
 
 // API per recuperare un team per ID
-router.get("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    const team = await Team.findByPk(id);
-    if (!team) {
-      return res.status(404).send("Team non trovato");
+router.get(
+  "/:id",
+  validateRequest(getTeamSchema),
+  async (req: PromoterManagerRequest<GetTeamParams>, res: Response) => {
+    const { id } = req.params;
+    try {
+      const team = await Team.findByPk(id);
+      if (!team) {
+        return res.status(404).send("Team non trovato");
+      }
+      res.json(team);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Errore nel recupero del team");
     }
-    res.json(team);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero del team");
   }
-});
+);
 
-router.post("/utente", async (req: Request, res: Response) => {
-  const { nome, descrizione, colore, utentiIds } = req.body;
-  const idUtente = req.user?.id;
+router.post(
+  "/utente",
+  validateRequest(createTeamSchema),
+  async (req: PromoterManagerRequestBody<CreateTeamBody>, res: Response) => {
+    const { nome, descrizione, colore, utentiIds } = req.body;
+    const idUtente = req.user?.id;
 
-  try {
-    const utente = await Utente.findByPk(idUtente);
+    try {
+      const utente = await Utente.findByPk(idUtente);
 
-    if (!utente) {
-      return res.status(404).json({ message: "Utente non trovato" });
-    }
+      if (!utente) {
+        return res.status(404).json({ message: "Utente non trovato" });
+      }
 
-    const nuovoTeam = await Team.create({ nome, descrizione, colore });
+      const nuovoTeam = await Team.create({ nome, descrizione, colore });
 
-    // Associa l'utente al team
-    await UtenteTeam.create({
-      utente_id: idUtente,
-      team_id: nuovoTeam.dataValues.id,
-    });
-
-    const utenti = await Utente.findAll({ where: { id: utentiIds } });
-
-    if (utenti.length !== utentiIds.length) {
-      return res
-        .status(400)
-        .json({ message: "Alcuni utenti non sono stati trovati" });
-    }
-
-    // Aggiunge gli utenti al team
-    await Promise.all((utentiIds as Array<number>).map(async (id) => {
-      return await UtenteTeam.create({
-        utente_id: id,
+      // Associa l'utente al team
+      await UtenteTeam.create({
+        utente_id: idUtente,
         team_id: nuovoTeam.dataValues.id,
       });
-    }));
 
-    await Calendario.create({
-      nome: `Calendario ${nome}`,
-      descrizione: `Calendario principale per ${nome}`,
-      team_id: nuovoTeam.dataValues.id,
-    });
+      const utenti = await Utente.findAll({ where: { id: utentiIds } });
 
-    res.status(201).json(nuovoTeam);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Errore nella creazione del team" });
-  }
-});
+      if (utentiIds && utenti.length !== utentiIds.length) {
+        return res
+          .status(400)
+          .json({ message: "Alcuni utenti non sono stati trovati" });
+      }
 
-// Modifica del team
-router.put("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { nome, descrizione, utentiIds: userIds, colore } = req.body;
+      // Aggiunge gli utenti al team
+      await Promise.all(
+        (utentiIds as Array<number>).map(async (id) => {
+          return await UtenteTeam.create({
+            utente_id: id,
+            team_id: nuovoTeam.dataValues.id,
+          });
+        })
+      );
 
-  try {
-    // Trova il team per ID
-    const team = await Team.findByPk(id, {
-      include: [
-        {
-          model: Utente,
-          as: "utenti", // Alias dell'associazione
-        },
-      ],
-    });
-
-    if (!team) {
-      return res.status(404).json({ message: "Team non trovato" });
-    }
-
-    // Aggiorna i dettagli del team
-    await team.update({
-      nome,
-      descrizione,
-      colore,
-    });
-
-    // Se sono stati passati userIds, aggiorna i membri del team
-    if (Array.isArray(userIds)) {
-      // Trova gli utenti corrispondenti agli userIds
-      const utenti = await Utente.findAll({
-        where: {
-          id: userIds,
-        },
+      await Calendario.create({
+        nome: `Calendario ${nome}`,
+        descrizione: `Calendario principale per ${nome}`,
+        team_id: nuovoTeam.dataValues.id,
       });
 
-      // Elenco di ID utente
-      const userIdsToAdd = utenti.map((utente) => utente.dataValues.id);
+      res.status(201).json(nuovoTeam);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Errore nella creazione del team" });
+    }
+  }
+);
 
-      // Trova i membri esistenti del team
-      const currentMembers = team.dataValues.utenti;
+// Modifica del team
+router.put(
+  "/:id",
+  validateRequest(updateTeamSchema),
+  async (
+    req: PromoterManagerRequest<UpdateTeamParams, UpdateTeamBody>,
+    res: Response
+  ) => {
+    const { id } = req.params;
+    const { nome, descrizione, utentiIds: userIds, colore } = req.body;
 
-      // Elenco di ID utenti attualmente nel team
-      const currentUserIds = currentMembers.map(
-        (member: { id: number }) => member.id
-      );
-
-      // Trova gli utenti da aggiungere e rimuovere
-      const usersToAdd = userIdsToAdd.filter(
-        (id) => !currentUserIds.includes(id)
-      );
-      const usersToRemove = currentUserIds.filter(
-        (id: number) => !userIdsToAdd.includes(id)
-      );
-
-      console.log(userIdsToAdd, "to add");
-      console.log(usersToRemove, "to remove");
-
-      await Promise.all((usersToAdd as Array<number>).map(async (id) => {
-        return await UtenteTeam.create(
+    try {
+      // Trova il team per ID
+      const team = await Team.findByPk(id, {
+        include: [
           {
-            utente_id: id,
-            team_id: team.dataValues.id,
+            model: Utente,
+            as: "utenti", // Alias dell'associazione
           },
-          { ignoreDuplicates: true }
-        );
-      }));
+        ],
+      });
 
-      if (usersToRemove.length > 0) {
+      if (!team) {
+        return res.status(404).json({ message: "Team non trovato" });
+      }
+
+      // Aggiorna i dettagli del team
+      await team.update({
+        nome,
+        descrizione,
+        colore,
+      });
+
+      // Se sono stati passati userIds, aggiorna i membri del team
+      if (Array.isArray(userIds)) {
+        // Trova gli utenti corrispondenti agli userIds
+        const utenti = await Utente.findAll({
+          where: {
+            id: userIds,
+          },
+        });
+
+        // Elenco di ID utente
+        const userIdsToAdd = utenti.map((utente) => utente.dataValues.id);
+
+        // Trova i membri esistenti del team
+        const currentMembers = team.dataValues.utenti;
+
+        // Elenco di ID utenti attualmente nel team
+        const currentUserIds = currentMembers.map(
+          (member: { id: number }) => member.id
+        );
+
+        // Trova gli utenti da aggiungere e rimuovere
+        const usersToAdd = userIdsToAdd.filter(
+          (id) => !currentUserIds.includes(id)
+        );
+        const usersToRemove = currentUserIds.filter(
+          (id: number) => !userIdsToAdd.includes(id)
+        );
+
+        console.log(userIdsToAdd, "to add");
+        console.log(usersToRemove, "to remove");
+
         await Promise.all(
-          (usersToRemove as Array<number>).map(async (id) => {
-            return await UtenteTeam.destroy({
-              where: {
+          (usersToAdd as Array<number>).map(async (id) => {
+            return await UtenteTeam.create(
+              {
                 utente_id: id,
                 team_id: team.dataValues.id,
               },
-            });
+              { ignoreDuplicates: true }
+            );
           })
         );
-      }
-    }
 
-    res.json({ message: "Team aggiornato con successo" });
-  } catch (error) {
-    console.error("Errore durante l'aggiornamento del team:", error);
-    res.status(500).json({ message: "Errore interno del server" });
+        if (usersToRemove.length > 0) {
+          await Promise.all(
+            (usersToRemove as Array<number>).map(async (id) => {
+              return await UtenteTeam.destroy({
+                where: {
+                  utente_id: id,
+                  team_id: team.dataValues.id,
+                },
+              });
+            })
+          );
+        }
+      }
+
+      res.json({ message: "Team aggiornato con successo" });
+    } catch (error) {
+      console.error("Errore durante l'aggiornamento del team:", error);
+      res.status(500).json({ message: "Errore interno del server" });
+    }
   }
-});
+);
 
 // Nuovo endpoint per cancellazione logica
-router.delete("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
+router.delete(
+  "/:id",
+  validateRequest(deleteTeamSchema),
+  async (req: PromoterManagerRequest<DeleteTeamParams>, res: Response) => {
+    const { id } = req.params;
 
-  try {
-    // Trova il team per ID
-    const team: Model<TeamModel> | null = await Team.findByPk(id);
+    try {
+      // Trova il team per ID
+      const team: Model<TeamModel> | null = await Team.findByPk(id);
 
-    if (!team) {
-      return res.status(404).json({ message: "Team non trovato" });
+      if (!team) {
+        return res.status(404).json({ message: "Team non trovato" });
+      }
+
+      // Effettua la cancellazione logica impostando il flag attivo su false
+      await team.update({ attivo: false, data_disattivo: DateTime.now() });
+
+      res.json({ message: "Team disattivato con successo" });
+    } catch (error) {
+      console.error("Errore durante la disattivazione del team:", error);
+      res.status(500).json({ message: "Errore interno del server" });
     }
-
-    // Effettua la cancellazione logica impostando il flag attivo su false
-    await team.update({ attivo: false, data_disattivo: DateTime.now() });
-
-    res.json({ message: "Team disattivato con successo" });
-  } catch (error) {
-    console.error("Errore durante la disattivazione del team:", error);
-    res.status(500).json({ message: "Errore interno del server" });
   }
-});
+);
 
 export default router;

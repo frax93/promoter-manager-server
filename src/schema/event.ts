@@ -20,10 +20,13 @@ export const createEventSchema = Joi.object<PromoterManagerRequest<unknown, Crea
 });
 
 // Schema per l'aggiornamento di un evento esistente
-export const updateEventSchema = Joi.object<PromoterManagerRequest<UpdateEventRequestParams, UpdateEventRequestBody>>({
+export const updateEventSchema = Joi.object<
+  PromoterManagerRequest<UpdateEventRequestParams, UpdateEventRequestBody>
+>({
   params: Joi.object({
-    id: Joi.string().required().messages({
-      "string.empty": "L'ID dell'evento è obbligatorio",
+    id: Joi.number().integer().required().messages({
+      "any.required": "Il parametro 'id' è obbligatorio",
+      "number.base": "'id' deve essere un numero intero",
     }),
   }),
   body: Joi.object({
@@ -36,19 +39,25 @@ export const updateEventSchema = Joi.object<PromoterManagerRequest<UpdateEventRe
 });
 
 // Schema per l'eliminazione di un evento
-export const deleteEventSchema = Joi.object<PromoterManagerRequest<DeleteEventRequestParams>>({
+export const deleteEventSchema = Joi.object<
+  PromoterManagerRequest<DeleteEventRequestParams>
+>({
   params: Joi.object({
-    id: Joi.string().required().messages({
-      "string.empty": "L'ID dell'evento è obbligatorio",
+    id: Joi.number().integer().required().messages({
+      "any.required": "Il parametro 'id' è obbligatorio",
+      "number.base": "'id' deve essere un numero intero",
     }),
   }),
 });
 
 // Schema per ottenere le spese associate a un evento
-export const getEventExpensesSchema = Joi.object<PromoterManagerRequest<GetEventExpensesRequestParams>>({
+export const getEventExpensesSchema = Joi.object<
+  PromoterManagerRequest<GetEventExpensesRequestParams>
+>({
   params: Joi.object({
-    id: Joi.string().required().messages({
-      "string.empty": "L'ID dell'evento è obbligatorio",
+    id: Joi.number().integer().required().messages({
+      "any.required": "Il parametro 'id' è obbligatorio",
+      "number.base": "'id' deve essere un numero intero",
     }),
   }),
 });
