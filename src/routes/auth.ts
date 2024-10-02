@@ -18,256 +18,284 @@ import { UtenteTeam } from "../db-models/user-team";
 import { TeamModel } from "../models/team";
 import { clientTeam } from "../constants/client-team";
 import { Calendario } from "../db-models/calendar";
+import { validateRequest } from "../utils/validate-schema";
+import { confirmEmailSchema, loginSchema, registrationSchema, resetPasswordSchema, verificaUtenzaSchema } from "../schema/auth";
+import { LoginBody, RegistrationBody, ResetPasswordBody } from "../types/auth";
+import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
 
 const router = express.Router();
 
 // API per verificare utenza
-router.post("/verifica-utenza", async (req: Request,res: Response) => {
-  const { email, password } = req.body;
+router.post(
+  "/verifica-utenza",
+  validateRequest(verificaUtenzaSchema),
+  async (req: PromoterManagerRequestBody<RegistrationBody>, res: Response) => {
+    const { email, password } = req.body;
 
-  try {
-    const utente: Model<UserModel> | null = await Utente.findOne({
-      where: { email },
-    });
-
-    if (!utente) {
-      return res.status(404).json({ message: "Utente non trovato" });
-    }
-
-    const passwordIsValid = await bcrypt.compare(
-      password,
-      utente.dataValues.password
-    );
-
-    if (!passwordIsValid) {
-      return res.status(401).json({ message: "Password errata" });
-    }
-
-    res.status(200).json({
-      ...utente.dataValues,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Errore in verifica utente" });
-  }
-});
-
-router.post("/login", async (req: Request,res: Response) => {
-  const { email, password, token2FA } = req.body;
-
-  try {
-    const utente: Model<UserModel> | null = await Utente.findOne({
-      where: { email },
-    });
-    if (!utente) {
-      return res.status(404).json({ message: "Utente non trovato" });
-    }
-
-    const passwordIsValid = await bcrypt.compare(
-      password,
-      utente.dataValues.password
-    );
-
-    if (!passwordIsValid) {
-      return res.status(401).json({ message: "Password errata" });
-    }
-
-    if (utente.dataValues.two_factor_enabled) {
-      // Verifica il codice 2FA
-      const verified = speakeasy.totp.verify({
-        secret: utente.dataValues.two_factor_secret,
-        encoding: "base32",
-        token: token2FA,
+    try {
+      const utente: Model<UserModel> | null = await Utente.findOne({
+        where: { email },
       });
 
-      if (!verified) {
-        return res.status(400).json({ message: "Codice 2FA non valido" });
+      if (!utente) {
+        return res.status(404).json({ message: "Utente non trovato" });
       }
-    }
 
-    const token = jwt.sign(
-      {
+      const passwordIsValid = await bcrypt.compare(
+        password,
+        utente.dataValues.password
+      );
+
+      if (!passwordIsValid) {
+        return res.status(401).json({ message: "Password errata" });
+      }
+
+      res.status(200).json({
+        ...utente.dataValues,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Errore in verifica utente" });
+    }
+  }
+);
+
+router.post(
+  "/login",
+  validateRequest(loginSchema),
+  async (req: PromoterManagerRequestBody<LoginBody>, res: Response) => {
+    const { email, password, token2FA } = req.body;
+
+    try {
+      const utente: Model<UserModel> | null = await Utente.findOne({
+        where: { email },
+      });
+      if (!utente) {
+        return res.status(404).json({ message: "Utente non trovato" });
+      }
+
+      const passwordIsValid = await bcrypt.compare(
+        password,
+        utente.dataValues.password
+      );
+
+      if (!passwordIsValid) {
+        return res.status(401).json({ message: "Password errata" });
+      }
+
+      if (utente.dataValues.two_factor_enabled && token2FA) {
+        // Verifica il codice 2FA
+        const verified = speakeasy.totp.verify({
+          secret: utente.dataValues.two_factor_secret,
+          encoding: "base32",
+          token: token2FA,
+        });
+
+        if (!verified) {
+          return res.status(400).json({ message: "Codice 2FA non valido" });
+        }
+      }
+
+      const token = jwt.sign(
+        {
+          id: utente.dataValues.id,
+          email: utente.dataValues.email,
+          name: utente.dataValues.nome,
+        },
+        __JWT_SECRET__,
+        {
+          expiresIn: 86400, // 24 ore
+        }
+      );
+
+      res.status(200).json({
         id: utente.dataValues.id,
         email: utente.dataValues.email,
-        name: utente.dataValues.nome,
-      },
-      __JWT_SECRET__,
-      {
-        expiresIn: 86400, // 24 ore
-      }
-    );
-
-    res.status(200).json({
-      id: utente.dataValues.id,
-      email: utente.dataValues.email,
-      nome: utente.dataValues.nome,
-      accessToken: token,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Errore nel login" });
+        nome: utente.dataValues.nome,
+        accessToken: token,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Errore nel login" });
+    }
   }
-});
+);
 
 // API per creare un nuovo utente
-router.post("/registrazione", async (req: Request,res: Response) => {
-  const { nome, email, password, token } = req.body;
-  try {
-    // Verifica se l'email esiste già
-    const existingUser = await Utente.findOne({ where: { email } });
+router.post(
+  "/registrazione",
+  validateRequest(registrationSchema),
+  async (req: PromoterManagerRequestBody<RegistrationBody>, res: Response) => {
+    const { nome, email, password, token } = req.body;
+    try {
+      // Verifica se l'email esiste già
+      const existingUser = await Utente.findOne({ where: { email } });
 
-    if (existingUser) {
-      return res.status(400).send("L'email è già in uso.");
+      if (existingUser) {
+        return res.status(400).send("L'email è già in uso.");
+      }
+      // Genera il codice di conferma
+      const confirmationToken = generateConfirmationToken();
+
+      const confirmationTokenExpires = DateTime.now()
+        .plus({ minutes: 15 })
+        .toISO();
+
+      const nuovoUtente: Model<UserModel> = await Utente.create({
+        nome,
+        email,
+        password,
+        token_verifica: confirmationToken,
+        email_confermata: false,
+        scadenza_token: confirmationTokenExpires,
+        push_token: token,
+      });
+
+      const nuovoTeam: Model<TeamModel> = await Team.create({ ...clientTeam });
+
+      // Associa l'utente al team
+      await UtenteTeam.create({
+        utente_id: nuovoUtente.dataValues.id,
+        team_id: nuovoTeam.dataValues.id,
+      });
+
+      await Calendario.create({
+        nome: `Calendario ${nome}`,
+        descrizione: `Calendario principale per ${nome}`,
+        team_id: nuovoTeam.dataValues.id,
+      });
+
+      // Invia l'email di conferma
+      await sendConfirmationEmail(email, confirmationToken);
+
+      res.status(201).json(nuovoUtente.dataValues);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Errore nella creazione dell'utente");
     }
-    // Genera il codice di conferma
-    const confirmationToken = generateConfirmationToken();
-
-    const confirmationTokenExpires = DateTime.now()
-      .plus({ minutes: 15 })
-      .toISO();
-
-    const nuovoUtente: Model<UserModel> = await Utente.create({
-      nome,
-      email,
-      password,
-      token_verifica: confirmationToken,
-      email_confermata: false,
-      scadenza_token: confirmationTokenExpires,
-      push_token: token
-    });
-
-    const nuovoTeam: Model<TeamModel> = await Team.create({ ...clientTeam });
-
-    // Associa l'utente al team
-    await UtenteTeam.create({
-      utente_id: nuovoUtente.dataValues.id,
-      team_id: nuovoTeam.dataValues.id,
-    });
-
-    await Calendario.create({
-      nome: `Calendario ${nome}`,
-      descrizione: `Calendario principale per ${nome}`,
-      team_id: nuovoTeam.dataValues.id,
-    });
-
-    // Invia l'email di conferma
-    await sendConfirmationEmail(email, confirmationToken);
-
-    res.status(201).json(nuovoUtente.dataValues);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nella creazione dell'utente");
   }
-});
+);
 
-router.get("/conferma-email/:token", async (req: Request,res: Response) => {
-  const { token } = req.params;
+router.get(
+  "/conferma-email/:token",
+  validateRequest(confirmEmailSchema),
+  async (req: PromoterManagerRequest<{ token: string }>, res: Response) => {
+    const { token } = req.params;
 
-  try {
-    // Trova l'utente con il token di conferma
-    const user = await Utente.findOne({ where: { token_verifica: token } });
+    try {
+      // Trova l'utente con il token di conferma
+      const user = await Utente.findOne({ where: { token_verifica: token } });
 
-    if (!user) {
-      return res.status(400).send("Token non valido o già utilizzato.");
+      if (!user) {
+        return res.status(400).send("Token non valido o già utilizzato.");
+      }
+
+      // Controlla se il token è scaduto con Luxon
+      const now = DateTime.now();
+      const tokenExpires = DateTime.fromISO(user.dataValues.scadenza_token);
+
+      if (now > tokenExpires) {
+        return res.status(400).send("Il token di conferma è scaduto.");
+      }
+
+      // Aggiorna lo stato dell'utente e rimuovi il token di conferma
+
+      await user.update({
+        token_verifica: null,
+        email_confermata: true,
+        scadenza_token: null,
+      });
+
+      res.send("Email confermata con successo! Ora puoi effettuare il login.");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Errore");
     }
-
-    // Controlla se il token è scaduto con Luxon
-    const now = DateTime.now();
-    const tokenExpires = DateTime.fromISO(user.dataValues.scadenza_token);
-
-    if (now > tokenExpires) {
-      return res.status(400).send("Il token di conferma è scaduto.");
-    }
-
-    // Aggiorna lo stato dell'utente e rimuovi il token di conferma
-
-    await user.update({
-      token_verifica: null,
-      email_confermata: true,
-      scadenza_token: null,
-    });
-
-    res.send("Email confermata con successo! Ora puoi effettuare il login.");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore");
   }
-});
+);
 
-router.post("/reinvia-conferma", async (req: Request,res: Response) => {
-  const { email } = req.body;
+router.post(
+  "/reinvia-conferma",
+  validateRequest(resetPasswordSchema),
+  async (req: PromoterManagerRequestBody<ResetPasswordBody>, res: Response) => {
+    const { email } = req.body;
 
-  try {
-    // Trova l'utente in base all'email
-    const user: Model<UserModel> | null = await Utente.findOne({
-      where: { email },
-    });
+    try {
+      // Trova l'utente in base all'email
+      const user: Model<UserModel> | null = await Utente.findOne({
+        where: { email },
+      });
 
-    if (!user) {
-      return res.status(404).send("Utente non trovato.");
+      if (!user) {
+        return res.status(404).send("Utente non trovato.");
+      }
+
+      if (user.dataValues?.email_confermata) {
+        return res.status(400).send("L'utente ha già confermato l'email.");
+      }
+
+      // Genera un nuovo token e una nuova data di scadenza usando Luxon
+      const newConfirmationToken = generateConfirmationToken();
+      const newConfirmationTokenExpires = DateTime.now()
+        .plus({ minutes: 15 })
+        .toISO();
+
+      // Aggiorna lo stato dell'utente e mette il token di verifica
+      await user.update({
+        token_verifica: newConfirmationToken,
+        email_confermata: false,
+        scadenza_token: newConfirmationTokenExpires,
+      });
+
+      // Invia una nuova email di conferma
+      await sendConfirmationEmail(email, newConfirmationToken);
+
+      res
+        .status(200)
+        .send(
+          "Nuova email di conferma inviata. Controlla la tua casella di posta."
+        );
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Errore");
     }
+  }
+);
 
-    if (user.dataValues?.email_confermata) {
-      return res.status(400).send("L'utente ha già confermato l'email.");
+router.post(
+  "/reset-password",
+  validateRequest(resetPasswordSchema),
+  async (req: PromoterManagerRequestBody<ResetPasswordBody>, res: Response) => {
+    const { email } = req.body;
+    try {
+      const user: Model<UserModel> | null = await Utente.findOne({
+        where: { email },
+      });
+      // Genera il JWT
+      const token = jwt.sign(
+        {
+          id: user?.dataValues.id,
+        },
+        __JWT_SECRET__,
+        { expiresIn: "15min" }
+      ); // Imposta la scadenza come preferisci
+
+      // Costruisci l'URL con il token nella query string
+      const confirmationUrl = `${webAppUrl}/reset-password?tempTk=${token}`;
+
+      // Invia l'email di conferma
+      await sendEmail({
+        to: email,
+        subject: `Reset password`,
+        text: `Hai 15 minuti per cambiare la password su ${confirmationUrl}`,
+      });
+
+      res.send("Email cambio password inoltrata con successo!");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Errore");
     }
-
-    // Genera un nuovo token e una nuova data di scadenza usando Luxon
-    const newConfirmationToken = generateConfirmationToken();
-    const newConfirmationTokenExpires = DateTime.now()
-      .plus({ minutes: 15 })
-      .toISO();
-
-    // Aggiorna lo stato dell'utente e mette il token di verifica
-    await user.update({
-      token_verifica: newConfirmationToken,
-      email_confermata: false,
-      scadenza_token: newConfirmationTokenExpires,
-    });
-
-    // Invia una nuova email di conferma
-    await sendConfirmationEmail(email, newConfirmationToken);
-
-    res
-      .status(200)
-      .send(
-        "Nuova email di conferma inviata. Controlla la tua casella di posta."
-      );
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore");
   }
-});
-
-router.post("/reset-password", async (req: Request, res: Response) => {
-  const { email } = req.body;
-  try {
-    const user: Model<UserModel> | null = await Utente.findOne({
-      where: { email },
-    });
-    // Genera il JWT
-    const token = jwt.sign(
-      {
-        id: user?.dataValues.id,
-      },
-      __JWT_SECRET__,
-      { expiresIn: "15min" }
-    ); // Imposta la scadenza come preferisci
-
-    // Costruisci l'URL con il token nella query string
-    const confirmationUrl = `${webAppUrl}/reset-password?tempTk=${token}`;
-
-    // Invia l'email di conferma
-    await sendEmail({
-      to: email,
-      subject: `Reset password`,
-      text: `Hai 15 minuti per cambiare la password su ${confirmationUrl}`,
-    });
-
-    res.send("Email cambio password inoltrata con successo!");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore");
-  }
-});
+);
 
 export default router;
