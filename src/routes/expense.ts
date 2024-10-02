@@ -3,11 +3,20 @@ import { Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import { Tipo } from "../db-models/type";
 import jwtMiddleware from "../middleware/jwt";
+import {
+  createExpenseSchema,
+  updateExpenseSchema,
+  deleteExpenseSchema,
+} from "../schema/expense"; 
+import { validateRequest } from "../utils/validate-schema"; 
+import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
+import { CreateExpenseRequestBody, DeleteExpenseRequestParams, UpdateExpenseRequestBody, UpdateExpenseRequestParams } from "../types/expense";
 
 const router = Router();
 
 router.use(jwtMiddleware());
 
+// Endpoint per recuperare tutte le spese
 router.get("/", async (req: Request, res: Response) => {
   try {
     const spese = await Spesa.findAll({
@@ -44,86 +53,111 @@ router.get("/utente", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/", async (req: Request, res: Response) => {
-  const { descrizione, importo, tipoId, guadagno_spesa, tipo_importo } = req.body;
+// POST /spesa - Crea una spesa
+router.post(
+  "/",
+  validateRequest(createExpenseSchema),
+  async (
+    req: PromoterManagerRequestBody<CreateExpenseRequestBody>,
+    res: Response
+  ) => {
+    const { descrizione, importo, tipoId, guadagno_spesa, tipo_importo } =
+      req.body;
 
-  const utenteId = req.user?.id;
+    const utenteId = req.user?.id;
 
-  try {
-    // Verifica se l'utente esiste
-    const utente = await Utente.findByPk(utenteId);
-    if (!utente) {
-      return res.status(404).json({ message: "Utente non trovato" });
-    }
-
-    if (!guadagno_spesa) {
-      // Verifica se il tipo esiste
-      const tipo = await Tipo.findByPk(tipoId);
-      if (!tipo) {
-        return res.status(404).json({ message: "Tipo non trovato" });
+    try {
+      // Verifica se l'utente esiste
+      const utente = await Utente.findByPk(utenteId);
+      if (!utente) {
+        return res.status(404).json({ message: "Utente non trovato" });
       }
-    }
-    
-    // Crea la nuova spesa associata all'utente e all'evento
-    const nuovaSpesa = await Spesa.create({
-      descrizione,
-      importo,
-      utente_id: utenteId,
-      tipo_id: tipoId,
-      tipo_importo,
-      guadagno_spesa,
-    });
 
-    // Rispondi con la spesa creata
-    res.status(201).json(nuovaSpesa);
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ message: "Errore durante la creazione della spesa" });
+      if (!guadagno_spesa) {
+        // Verifica se il tipo esiste
+        const tipo = await Tipo.findByPk(tipoId);
+        if (!tipo) {
+          return res.status(404).json({ message: "Tipo non trovato" });
+        }
+      }
+
+      // Crea la nuova spesa associata all'utente e all'evento
+      const nuovaSpesa = await Spesa.create({
+        descrizione,
+        importo,
+        utente_id: utenteId,
+        tipo_id: tipoId,
+        tipo_importo,
+        guadagno_spesa,
+      });
+
+      // Rispondi con la spesa creata
+      res.status(201).json(nuovaSpesa);
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ message: "Errore durante la creazione della spesa" });
+    }
   }
-});
+);
 
 // PUT /spesa/:id - Aggiorna una spesa
-router.put('/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { descrizione, importo, tipoId, tipo_importo } =
-    req.body;
+router.put(
+  "/:id",
+  validateRequest(updateExpenseSchema),
+  async (
+    req: PromoterManagerRequest<
+      UpdateExpenseRequestParams,
+      UpdateExpenseRequestBody
+    >,
+    res: Response
+  ) => {
+    const { id } = req.params;
+    const { descrizione, importo, tipoId, tipo_importo } = req.body;
 
-  try {
-    const spesa = await Spesa.findByPk(id);
-    if (!spesa) {
-      return res.status(404).json({ message: 'Spesa non trovata' });
+    try {
+      const spesa = await Spesa.findByPk(id);
+      if (!spesa) {
+        return res.status(404).json({ message: "Spesa non trovata" });
+      }
+
+      const spesaUpdated = await spesa.update({
+        descrizione,
+        importo,
+        tipo_id: tipoId,
+        tipo_importo,
+      });
+      res.json(spesaUpdated);
+    } catch (error) {
+      res.status(500).json({ message: "Errore del server", error });
     }
-
-    const spesaUpdated = await spesa.update({
-      descrizione,
-      importo,
-      tipo_id: tipoId,
-      tipo_importo,
-    });
-    res.json(spesaUpdated);
-  } catch (error) {
-    res.status(500).json({ message: 'Errore del server', error });
   }
-});
+);
 
 // DELETE /spesa/:id - Elimina una spesa
-router.delete('/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
+router.delete(
+  "/:id",
+  validateRequest(deleteExpenseSchema),
+  async (
+    req: PromoterManagerRequest<DeleteExpenseRequestParams>,
+    res: Response
+  ) => {
+    const { id } = req.params;
 
-  try {
-    const spesa = await Spesa.findByPk(id);
-    if (!spesa) {
-      return res.status(404).json({ message: 'Spesa non trovata' });
+    try {
+      const spesa = await Spesa.findByPk(id);
+      if (!spesa) {
+        return res.status(404).json({ message: "Spesa non trovata" });
+      }
+
+      await spesa.destroy();
+      res.json({ message: "Spesa eliminata" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Errore del server" });
     }
-
-    await spesa.destroy();
-    res.json({ message: 'Spesa eliminata' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Errore del server' });
   }
-});
+);
 
 export default router;
