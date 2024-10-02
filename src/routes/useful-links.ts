@@ -3,6 +3,10 @@ import jwtMiddleware from "../middleware/jwt";
 import { LinkUtili } from "../db-models/useful-links";
 import { UsefulLinkModel } from "../models/useful-links";
 import { Model } from "sequelize";
+import { PromoterManagerRequestBody } from "../types/request";
+import { CreateUsefulLinkBody } from "../types/useful-links";
+import { validateRequest } from "../utils/validate-schema";
+import { createUsefulLinkSchema } from "../schema/useful-links";
 
 const router = Router();
 
@@ -24,7 +28,11 @@ router.get("/utente", async (req: Request, res: Response) => {
 
 router.put(
   "/",
-  async (req: Request<{ links: Array<UsefulLinkModel> }>, res: Response) => {
+  validateRequest(createUsefulLinkSchema),
+  async (
+    req: PromoterManagerRequestBody<CreateUsefulLinkBody>,
+    res: Response
+  ) => {
     const { links } = req.body; // links è un array di oggetti { id, url }
     const userId = req.user?.id;
 
@@ -34,11 +42,10 @@ router.put(
 
     try {
       // Recupera i link esistenti per l'utente
-      const existingLinks: Model<UsefulLinkModel>[] | null = await LinkUtili.findAll(
-        {
+      const existingLinks: Model<UsefulLinkModel>[] | null =
+        await LinkUtili.findAll({
           where: { utente_id: userId },
-        }
-      );
+        });
 
       // Crea un set di id dei link esistenti per facilitarne la ricerca
       const existingLinkIds = new Set(
