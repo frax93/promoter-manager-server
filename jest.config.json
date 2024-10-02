@@ -2,5 +2,12 @@
   "preset": "ts-jest",
   "testEnvironment": "node",
   "testPathIgnorePatterns": ["/node_modules/", "/dist/"],
-  "setupFilesAfterEnv": ["<rootDir>/src/jest.setup.ts"]
+  "setupFilesAfterEnv": ["<rootDir>/src/jest.setup.ts"],
+  "collectCoverage": true, 
+  "collectCoverageFrom": [
+    "src/**/*.{js,ts}", 
+    "!src/**/*.d.ts"
+  ],
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["text", "lcov"]
 }
