@@ -33,6 +33,8 @@ router.post("/verifica-utenza", async (req: Request,res: Response) => {
       return res.status(404).json({ message: "Utente non trovato" });
     }
 
+    console.log(utente.dataValues.password, password);
+
     const passwordIsValid = await bcrypt.compare(
       password,
       utente.dataValues.password
