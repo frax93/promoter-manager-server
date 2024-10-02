@@ -29,15 +29,10 @@ router.post("/verifica-utenza", async (req: Request,res: Response) => {
     const utente: Model<UserModel> | null = await Utente.findOne({
       where: { email },
     });
+
     if (!utente) {
       return res.status(404).json({ message: "Utente non trovato" });
     }
-
-    console.log(utente.dataValues.password, password);
-
-    bcrypt.hash(password, 10, (err, hash) => {
-      console.log(hash); // Salva questo hash e confrontalo
-    });
 
     const passwordIsValid = await bcrypt.compare(
       password,
@@ -116,7 +111,7 @@ router.post("/login", async (req: Request,res: Response) => {
 
 // API per creare un nuovo utente
 router.post("/registrazione", async (req: Request,res: Response) => {
-  const { nome, email, password } = req.body;
+  const { nome, email, password, token } = req.body;
   try {
     // Verifica se l'email esiste già
     const existingUser = await Utente.findOne({ where: { email } });
@@ -138,6 +133,7 @@ router.post("/registrazione", async (req: Request,res: Response) => {
       token_verifica: confirmationToken,
       email_confermata: false,
       scadenza_token: confirmationTokenExpires,
+      push_token: token
     });
 
     const nuovoTeam: Model<TeamModel> = await Team.create({ ...clientTeam });

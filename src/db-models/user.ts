@@ -69,12 +69,10 @@ const Utente = sequelize.define(
       beforeCreate: async (utente) => {
         if (utente.dataValues.password) {
           const salt = await bcrypt.genSalt(10);
-          console.log(utente.dataValues.password, "not hashed");
           utente.dataValues.password = await bcrypt.hash(
             utente.dataValues.password,
             salt
           );
-          console.log(utente.dataValues.password, 'hashed');
         }
       },
     },
