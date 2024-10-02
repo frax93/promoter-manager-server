@@ -32,7 +32,7 @@ const getAccessToken = async () => {
 export const backendAppUrl = __BACKEND_APP_URL__; // URL dell'applicazione backend 
 export const webAppUrl = __WEB_APP_URL__; // URL dell'applicazione web
 
-function createConfirmationLink(token: string) {
+export function createConfirmationLink(token: string) {
   return `${backendAppUrl}/api/autenticazione/conferma-email/${token}`;
 }
 
