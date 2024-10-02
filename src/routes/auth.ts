@@ -35,6 +35,10 @@ router.post("/verifica-utenza", async (req: Request,res: Response) => {
 
     console.log(utente.dataValues.password, password);
 
+    bcrypt.hash(password, 10, (err, hash) => {
+      console.log(hash); // Salva questo hash e confrontalo
+    });
+
     const passwordIsValid = await bcrypt.compare(
       password,
       utente.dataValues.password
