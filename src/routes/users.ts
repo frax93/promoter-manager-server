@@ -223,7 +223,7 @@ router.post("/cambia-password", async (req: Request, res: Response) => {
         });
     }
 
-    await Utente.update(
+    await utente.update(
       { password: passwordCrypted }, // Dati che vuoi aggiornare
       {
         where: {

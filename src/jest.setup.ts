@@ -22,6 +22,12 @@ const bcryptCompareRejected = jest.fn().mockRejectedValue(new Error('Random erro
 const bcryptCompare = jest.fn().mockResolvedValue(true);
 (bcrypt.compare as jest.Mock) = bcryptCompare;
 
+const bcryptHash = jest.fn().mockResolvedValue("newHashedPassword");
+(bcrypt.hash as jest.Mock) = bcryptHash;
+
+const bcryptGenSalt = jest.fn().mockResolvedValue("saltedPassword");
+(bcrypt.genSalt as jest.Mock) = bcryptGenSalt;
+
 
 
 // Mock della connessione al db

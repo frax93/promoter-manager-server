@@ -2,7 +2,6 @@ import request from "supertest";
 import { app } from "../"; // Importa la tua app Express
 import { Team } from "../db-models/team";
 import { Utente } from "../db-models/user";
-import { UtenteTeam } from "../db-models/user-team";
 import { Calendario } from "../db-models/calendar";
 import { mockToken } from "../mocks/jest-logged-user"; // Token mock
 import { __BASE_PATH__ } from "../constants/environment"; // Base path
