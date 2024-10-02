@@ -25,5 +25,5 @@ export const __EMAIL_USER__ = process.env.EMAIL_USER || '';
 
 /** Server urls */
 export const __WEB_APP_URL__ = process.env.WEB_APP_URL || '';
-export const __BACKEND_APP_URL__ = process.env.BACKEND_APP_URL || 'https://promoter-manager-server-0e30fdbde338.herokuapp.com';
+export const __BACKEND_APP_URL__ = process.env.BACKEND_APP_URL || '';
 
