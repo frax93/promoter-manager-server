@@ -10,6 +10,10 @@ import { Team } from "../db-models/team";
 import bcrypt from 'bcryptjs';
 import { UserModel } from "../models/user";
 import { Model } from "sequelize";
+import { validateRequest } from "../utils/validate-schema";
+import { availabilitySchema, changePasswordSchema, getUserSchema, updateUserSchema } from "../schema/users";
+import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
+import { AvailabilityBody, ChangePasswordBody, GetUserParams, UpdateUserBody, UpdateUserParams } from "../types/users";
 
 const router = Router();
 
@@ -98,145 +102,162 @@ router.get("/disabilita-2fa", async (req: Request, res: Response) => {
 });
 
 // API per recuperare un utente per ID
-router.get("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    const utente = await Utente.findByPk(id);
-    if (!utente) {
-      return res.status(404).send("Utente non trovato");
-    }
-    res.json(utente);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero dell'utente");
-  }
-});
-
-router.put("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { referralLink, linkAzienda, linkVideo } = req.body;
-
-  try {
-    const utente = await Utente.findByPk(id);
-    if (!utente) {
-      return res.status(404).json({ message: "Utente non trovato" });
-    }
-
-    await utente.update({
-      referrallink: referralLink,
-      linkazienda: linkAzienda,
-      linkvideo: linkVideo,
-    });
-
-    res.json(utente);
-  } catch (error) {
-    res.status(500).json({ message: "Errore del server", error });
-  }
-});
-
-router.post("/disponibilita", async (req: Request, res: Response) => {
-  const { emails = [], token } = req.body;
-  const name = req.user?.name;
-  const emailUser = req.user?.email;
-  const id = req.user?.id;
-  try {
-    const teamCliente = await Team.findOne({
-      where: {
-        attivo: true,
-        is_cliente: true,
-      },
-      include: [
-        {
-          model: Utente,
-          as: "utenti", // Alias dell'associazione
-          where: {
-            id,
-          },
-        },
-      ],
-    });
-
-    await Utente.update(
-      { push_token: token }, // Dati che vuoi aggiornare
-      {
-        where: {
-          id: id, // Condizione where
-        },
+router.get(
+  "/:id",
+  validateRequest(getUserSchema),
+  async (req: PromoterManagerRequest<GetUserParams>, res: Response) => {
+    const { id } = req.params;
+    try {
+      const utente = await Utente.findByPk(id);
+      if (!utente) {
+        return res.status(404).send("Utente non trovato");
       }
-    );
-
-    for (const email of emails) {
-      // Genera il JWT
-      const token = jwt.sign(
-        {
-          id: id,
-          team: teamCliente?.dataValues?.id,
-        },
-        __JWT_SECRET__,
-        { expiresIn: "1h" }
-      ); // Imposta la scadenza come preferisci
-
-      // Costruisci l'URL con il token nella query string
-      const confirmationUrl = `${webAppUrl}/disponibilità?tempTk=${token}`;
-
-      // Invia l'email di conferma
-      await sendEmail({
-        to: email,
-        subject: `Disponibilità utente ${name} - ${emailUser}`,
-        text: `Controlla la disponibilità su ${confirmationUrl}`,
-      });
+      res.json(utente);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Errore nel recupero dell'utente");
     }
-
-    res.send("Email inoltrate con successo!");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore");
   }
-});
+);
 
-router.post("/cambia-password", async (req: Request, res: Response) => {
-  const { password } = req.body;
-  const id = req.user?.id;
-  try {
-    const salt = await bcrypt.genSalt(10);
-    
-    const passwordCrypted = await bcrypt.hash(
-      password,
-      salt
-    );
+router.put(
+  "/:id",
+  validateRequest(updateUserSchema),
+  async (
+    req: PromoterManagerRequest<UpdateUserParams, UpdateUserBody>,
+    res: Response
+  ) => {
+    const { id } = req.params;
+    const { referralLink, linkAzienda, linkVideo } = req.body;
 
-    const utente: Model<UserModel> | null = await Utente.findByPk(id);
-    if (!utente) {
-      return res.status(404).json({ message: "Utente non trovato" });
+    try {
+      const utente = await Utente.findByPk(id);
+      if (!utente) {
+        return res.status(404).json({ message: "Utente non trovato" });
+      }
+
+      await utente.update({
+        referrallink: referralLink,
+        linkazienda: linkAzienda,
+        linkvideo: linkVideo,
+      });
+
+      res.json(utente);
+    } catch (error) {
+      res.status(500).json({ message: "Errore del server", error });
     }
+  }
+);
 
-    const passwordIsValid = await bcrypt.compare(
-      password,
-      utente.dataValues.password
-    );
+router.post(
+  "/disponibilita",
+  validateRequest(availabilitySchema),
+  async (req: PromoterManagerRequestBody<AvailabilityBody>, res: Response) => {
+    const { emails = [], token } = req.body;
+    const name = req.user?.name;
+    const emailUser = req.user?.email;
+    const id = req.user?.id;
+    try {
+      const teamCliente = await Team.findOne({
+        where: {
+          attivo: true,
+          is_cliente: true,
+        },
+        include: [
+          {
+            model: Utente,
+            as: "utenti", // Alias dell'associazione
+            where: {
+              id,
+            },
+          },
+        ],
+      });
 
-    if (passwordIsValid) {
-      return res
-        .status(401)
-        .json({
+      await Utente.update(
+        { push_token: token }, // Dati che vuoi aggiornare
+        {
+          where: {
+            id: id, // Condizione where
+          },
+        }
+      );
+
+      for (const email of emails) {
+        // Genera il JWT
+        const token = jwt.sign(
+          {
+            id: id,
+            team: teamCliente?.dataValues?.id,
+          },
+          __JWT_SECRET__,
+          { expiresIn: "1h" }
+        ); // Imposta la scadenza come preferisci
+
+        // Costruisci l'URL con il token nella query string
+        const confirmationUrl = `${webAppUrl}/disponibilità?tempTk=${token}`;
+
+        // Invia l'email di conferma
+        await sendEmail({
+          to: email,
+          subject: `Disponibilità utente ${name} - ${emailUser}`,
+          text: `Controlla la disponibilità su ${confirmationUrl}`,
+        });
+      }
+
+      res.send("Email inoltrate con successo!");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Errore");
+    }
+  }
+);
+
+router.post(
+  "/cambia-password",
+  validateRequest(changePasswordSchema),
+  async (
+    req: PromoterManagerRequestBody<ChangePasswordBody>,
+    res: Response
+  ) => {
+    const { password } = req.body;
+    const id = req.user?.id;
+    try {
+      const salt = await bcrypt.genSalt(10);
+
+      const passwordCrypted = await bcrypt.hash(password, salt);
+
+      const utente: Model<UserModel> | null = await Utente.findByPk(id);
+      if (!utente) {
+        return res.status(404).json({ message: "Utente non trovato" });
+      }
+
+      const passwordIsValid = await bcrypt.compare(
+        password,
+        utente.dataValues.password
+      );
+
+      if (passwordIsValid) {
+        return res.status(401).json({
           message: "Password uguale alla precedente, scegline un'altra",
         });
-    }
-
-    await utente.update(
-      { password: passwordCrypted }, // Dati che vuoi aggiornare
-      {
-        where: {
-          id: id, // Condizione where
-        },
       }
-    );
 
-    res.send("Cambio password effettuato con successo!");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore");
+      await utente.update(
+        { password: passwordCrypted }, // Dati che vuoi aggiornare
+        {
+          where: {
+            id: id, // Condizione where
+          },
+        }
+      );
+
+      res.send("Cambio password effettuato con successo!");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Errore");
+    }
   }
-});
+);
 
 export default router;
