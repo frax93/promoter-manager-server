@@ -1,4 +1,4 @@
-import { Router, Response } from "express";
+import { Router, Response, NextFunction } from "express";
 import { Calendario } from "../db-models/calendar";
 import { Evento } from "../db-models/event";
 import { Spesa } from "../db-models/expense";
@@ -12,7 +12,7 @@ import { TeamModel } from "../models/team";
 import { Note } from "../db-models/note";
 import { NoteModel } from "../models/note";
 import { sendPushNotification } from "../utils/send-push";
-import { validateRequest } from "../utils/validate-schema"; // Importa la validazione
+import { validateRequest } from "../middleware/validate-schema"; // Importa la validazione
 import {
   createEventSchema,
   updateEventSchema,
@@ -27,19 +27,22 @@ import {
   GetEventExpensesRequestParams,
 } from "../types/event"; // Tipi delle richieste
 import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
+import { NotFoundError } from "../errors/not-found-error";
+import { UnauthorizedError } from "../errors/unauthorized-error";
+import { UserModel } from "../models/user";
+import { ExpenseModel } from "../models/expense";
 
 const router = Router();
 
 router.use(jwtMiddleware());
 
 // Route per ottenere tutti gli eventi
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const eventi = await Evento.findAll();
     res.json(eventi);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero degli eventi");
+    next(err);
   }
 });
 
@@ -49,86 +52,106 @@ router.get(
   validateRequest<GetEventExpensesRequestParams>(getEventExpensesSchema), // Validazione schema
   async (
     req: PromoterManagerRequest<GetEventExpensesRequestParams>,
-    res: Response
+    res: Response,
+    next: NextFunction,
   ) => {
     const { id } = req.params;
+
+    const userId = req.user?.id;
+
     try {
-      const spese = await Spesa.findAll({
+      const evento: Model<EventoModel> | null = await Evento.findByPk(id);
+
+      if (!evento) {
+        throw new NotFoundError('Evento non trovato');
+      }
+
+      const spese: Array<Model<ExpenseModel>> = await Spesa.findAll({
         where: { evento_id: id },
       });
+
+      const utente: Model<UserModel> | null = await Utente.findByPk(userId);
+
+      if (
+        !(
+          spese.some((el) => el.dataValues.utente_id === utente?.dataValues.id)
+        )
+      ) {
+        throw new UnauthorizedError("Spese non appartenenti all'utente");
+      }
+
       res.json(spese);
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore nel recupero delle spese");
+      next(err);
     }
   }
 );
 
 // Route per ottenere tutti gli eventi di un utente
-router.get("/utente", async (req: Request, res: Response) => {
-  const idUtente = req.user?.id;
+router.get(
+  "/utente",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const idUtente = req.user?.id;
 
-  try {
-    // Trova l'utente con i team associati e i calendari e gli eventi
-    const utente = await Utente.findByPk(idUtente, {
-      include: [
-        {
-          model: Team,
-          as: "team",
-          where: {
-            attivo: true,
-          },
-          include: [
-            {
-              model: Calendario,
-              as: "calendario",
-              include: [
-                {
-                  model: Evento,
-                  as: "eventi",
-                  include: [
-                    {
-                      model: Note,
-                      as: "nota",
-                    },
-                  ],
-                },
-              ],
+    try {
+      // Trova l'utente con i team associati e i calendari e gli eventi
+      const utente = await Utente.findByPk(idUtente, {
+        include: [
+          {
+            model: Team,
+            as: "team",
+            where: {
+              attivo: true,
             },
-          ],
-        },
-      ],
-    });
+            include: [
+              {
+                model: Calendario,
+                as: "calendario",
+                include: [
+                  {
+                    model: Evento,
+                    as: "eventi",
+                    include: [
+                      {
+                        model: Note,
+                        as: "nota",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
 
-    // Verifica se l'utente esiste
-    if (!utente) {
-      return res.status(404).json({ message: "Utente non trovato" });
+      // Verifica se l'utente esiste
+      if (!utente) {
+        throw new NotFoundError("Utente non trovato");
+      }
+
+      // Recupera tutti gli eventi associati all'utente
+      const eventi = (
+        utente.dataValues.team as Array<{
+          calendario: { dataValues: { eventi: Array<never> } };
+        }>
+      ).flatMap((team) =>
+        team.calendario
+          ? team.calendario.dataValues.eventi.map(
+              (evento: { dataValues: {} }) => ({
+                ...(evento.dataValues || {}),
+                team,
+              })
+            )
+          : []
+      );
+
+      res.status(200).json(eventi);
+    } catch (err) {
+      next(err);
     }
-
-    // Recupera tutti gli eventi associati all'utente
-    const eventi = (
-      utente.dataValues.team as Array<{
-        calendario: { dataValues: { eventi: Array<never> } };
-      }>
-    ).flatMap((team) =>
-      team.calendario
-        ? team.calendario.dataValues.eventi.map(
-            (evento: { dataValues: {} }) => ({
-              ...(evento.dataValues || {}),
-              team,
-            })
-          )
-        : []
-    );
-    
-    res.status(200).json(eventi);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      message: "Errore nel recupero degli eventi",
-    });
   }
-});
+);
 
 // Endpoint per creare un nuovo evento associato a un calendario (e quindi a un team)
 router.post(
@@ -136,14 +159,15 @@ router.post(
   validateRequest(createEventSchema), // Validazione schema
   async (
     req: PromoterManagerRequestBody<CreateEventRequestBody>,
-    res: Response
+    res: Response,
+    next: NextFunction
   ) => {
     const { titolo, descrizione, data_inizio, data_fine, teamId } = req.body;
 
     const idUtente = req.user?.id;
-  
+
     const idTeam = req.user?.team || teamId;
-  
+
     try {
       // Verifica se il team esiste
       const team = await Team.findByPk(idTeam, {
@@ -154,11 +178,11 @@ router.post(
           },
         ],
       });
-  
+
       if (!team) {
-        return res.status(404).json({ message: "Team non trovato" });
+        throw new NotFoundError("Team non trovato");
       }
-  
+
       // Verifica se il team esiste
       const utente = await Utente.findByPk(idUtente, {
         include: [
@@ -168,24 +192,24 @@ router.post(
           },
         ],
       });
-  
+
       if (
         !utente?.dataValues.team.find(
           (el: { id: number }) => el.id === team.dataValues.id
         )
       ) {
-        return res.status(403).json({ message: "Utente non appartiene al team" });
+        throw new UnauthorizedError("Utente non appartiene al team");
       }
-  
+
       // Trova il calendario associato al team
       const calendario = await Calendario.findOne({
         where: { team_id: idTeam },
       });
-  
+
       if (!calendario) {
-        return res.status(404).json({ message: "Calendario non trovato" });
+        throw new NotFoundError("Calendario non trovato");
       }
-  
+
       // Crea il nuovo evento associato al calendario
       const nuovoEvento = await Evento.create({
         titolo,
@@ -196,7 +220,7 @@ router.post(
         team_id: idTeam,
         utente_id: idUtente,
       });
-  
+
       if (team.dataValues.utenti?.length > 1) {
         const usersTeam = team.dataValues.utenti || [];
         for (const utenteTeam of usersTeam) {
@@ -211,21 +235,18 @@ router.post(
           }
         }
       }
-  
+
       if (utente.dataValues.push_token && req.user?.team) {
         await sendPushNotification(
           utente.dataValues.push_token,
           "è stato aggiunto un nuovo evento al calendario"
         );
       }
-  
+
       // Rispondi con l'evento creato
       res.status(201).json(nuovoEvento);
     } catch (err) {
-      console.error(err);
-      res
-        .status(500)
-        .json({ message: "Errore durante la creazione dell'evento" });
+      next(err);
     }
   }
 );
@@ -239,7 +260,8 @@ router.put(
       UpdateEventRequestParams,
       UpdateEventRequestBody
     >,
-    res: Response
+    res: Response,
+    next: NextFunction,
   ) => {
     const { id } = req.params;
     const { titolo, descrizione, data_inizio, data_fine, nota } = req.body;
@@ -251,7 +273,7 @@ router.put(
       const evento: Model<EventoModel> | null = await Evento.findByPk(id);
   
       if (!evento) {
-        return res.status(404).json({ message: "Evento non trovato" });
+        throw new NotFoundError("Evento non trovato");
       }
   
       // Trova il team associato all'evento
@@ -263,7 +285,7 @@ router.put(
       );
   
       if (!team) {
-        return res.status(404).json({ message: "Team non trovato" });
+        throw new NotFoundError("Team non trovato");
       }
   
       // Verifica se l'utente autenticato è un membro del team
@@ -272,9 +294,7 @@ router.put(
       );
   
       if (!isUserInTeam) {
-        return res
-          .status(403)
-          .json({ message: "Non sei autorizzato a modificare questo evento" });
+        throw new UnauthorizedError("Non sei autorizzato a modificare questo evento");
       }
   
        // Crea la nuova nota associata all'utente
@@ -311,10 +331,7 @@ router.put(
   
       return res.json(eventoUpdated);
     } catch (error) {
-      console.error("Errore durante la modifica dell'evento:", error);
-      return res
-        .status(500)
-        .json({ message: "Errore durante la modifica dell'evento" });
+      next(error);
     }
   }
 );
@@ -325,7 +342,8 @@ router.delete(
   validateRequest(deleteEventSchema), // Validazione schema
   async (
     req: PromoterManagerRequest<DeleteEventRequestParams>,
-    res: Response
+    res: Response,
+    next: NextFunction,
   ) => {
     const { id } = req.params;
 
@@ -336,7 +354,7 @@ router.delete(
       const evento: Model<EventoModel> | null = await Evento.findByPk(id);
 
       if (!evento) {
-        return res.status(404).json({ message: "Evento non trovato" });
+        throw new NotFoundError("Evento non trovato");
       }
 
       // Trova il team associato all'evento
@@ -350,7 +368,7 @@ router.delete(
       );
 
       if (!team) {
-        return res.status(404).json({ message: "Team non trovato" });
+        throw new NotFoundError("Team non trovato");
       }
 
       // Verifica se l'utente autenticato è un membro del team
@@ -359,9 +377,7 @@ router.delete(
       );
 
       if (!isUserInTeam) {
-        return res
-          .status(403)
-          .json({ message: "Non sei autorizzato a eliminare questo evento" });
+        throw new UnauthorizedError("Non sei autorizzato a eliminare questo evento");
       }
 
       // Elimina l'evento
@@ -384,10 +400,7 @@ router.delete(
 
       return res.json({ message: "Evento eliminato con successo" });
     } catch (error) {
-      console.error("Errore durante l'eliminazione dell'evento:", error);
-      return res
-        .status(500)
-        .json({ message: "Errore durante l'eliminazione dell'evento" });
+      next(error);
     }
   }
 );

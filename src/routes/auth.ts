@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Utente } from "../db-models/user";
@@ -18,10 +18,23 @@ import { UtenteTeam } from "../db-models/user-team";
 import { TeamModel } from "../models/team";
 import { clientTeam } from "../constants/client-team";
 import { Calendario } from "../db-models/calendar";
-import { validateRequest } from "../utils/validate-schema";
-import { confirmEmailSchema, loginSchema, registrationSchema, resetPasswordSchema, verificaUtenzaSchema } from "../schema/auth";
+import { validateRequest } from "../middleware/validate-schema";
+import {
+  confirmEmailSchema,
+  loginSchema,
+  registrationSchema,
+  resetPasswordSchema,
+  verificaUtenzaSchema,
+} from "../schema/auth";
 import { LoginBody, RegistrationBody, ResetPasswordBody } from "../types/auth";
-import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
+import {
+  PromoterManagerRequest,
+  PromoterManagerRequestBody,
+} from "../types/request";
+import { NotFoundError } from "../errors/not-found-error";
+import { BadRequestError } from "../errors/bad-request-error";
+import { UnauthanteticatedError } from "../errors/unauthenticated-error";
+import { StatusCode } from "../constants/status-code";
 
 const router = express.Router();
 
@@ -29,7 +42,7 @@ const router = express.Router();
 router.post(
   "/verifica-utenza",
   validateRequest(verificaUtenzaSchema),
-  async (req: PromoterManagerRequestBody<RegistrationBody>, res: Response) => {
+  async (req: PromoterManagerRequestBody<RegistrationBody>, res: Response, next) => {
     const { email, password } = req.body;
 
     try {
@@ -38,7 +51,7 @@ router.post(
       });
 
       if (!utente) {
-        return res.status(404).json({ message: "Utente non trovato" });
+        throw new NotFoundError("Utente non trovato"); // Passa l'errore al middleware
       }
 
       const passwordIsValid = await bcrypt.compare(
@@ -47,15 +60,14 @@ router.post(
       );
 
       if (!passwordIsValid) {
-        return res.status(401).json({ message: "Password errata" });
+        throw new BadRequestError("Password errata"); // Passa l'errore al middleware
       }
 
-      res.status(200).json({
+      res.status(StatusCode.Ok).json({
         ...utente.dataValues,
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Errore in verifica utente" });
+      next(error); // Passa l'errore al middleware di gestione degli errori
     }
   }
 );
@@ -63,15 +75,18 @@ router.post(
 router.post(
   "/login",
   validateRequest(loginSchema),
-  async (req: PromoterManagerRequestBody<LoginBody>, res: Response) => {
+  async (
+    req: PromoterManagerRequestBody<LoginBody>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { email, password, token2FA } = req.body;
-
     try {
       const utente: Model<UserModel> | null = await Utente.findOne({
         where: { email },
       });
       if (!utente) {
-        return res.status(404).json({ message: "Utente non trovato" });
+        throw new NotFoundError("Non trovato");
       }
 
       const passwordIsValid = await bcrypt.compare(
@@ -80,7 +95,7 @@ router.post(
       );
 
       if (!passwordIsValid) {
-        return res.status(401).json({ message: "Password errata" });
+        throw new UnauthanteticatedError("Password errata");
       }
 
       if (utente.dataValues.two_factor_enabled && token2FA) {
@@ -92,7 +107,7 @@ router.post(
         });
 
         if (!verified) {
-          return res.status(400).json({ message: "Codice 2FA non valido" });
+          throw new BadRequestError("Codice 2FA non valido");
         }
       }
 
@@ -108,15 +123,14 @@ router.post(
         }
       );
 
-      res.status(200).json({
+      res.status(StatusCode.Ok).json({
         id: utente.dataValues.id,
         email: utente.dataValues.email,
         nome: utente.dataValues.nome,
         accessToken: token,
       });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Errore nel login" });
+    } catch (error) {
+      next(error);
     }
   }
 );
@@ -125,14 +139,18 @@ router.post(
 router.post(
   "/registrazione",
   validateRequest(registrationSchema),
-  async (req: PromoterManagerRequestBody<RegistrationBody>, res: Response) => {
+  async (
+    req: PromoterManagerRequestBody<RegistrationBody>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { nome, email, password, token } = req.body;
     try {
       // Verifica se l'email esiste già
       const existingUser = await Utente.findOne({ where: { email } });
 
       if (existingUser) {
-        return res.status(400).send("L'email è già in uso.");
+        throw new BadRequestError("L'email è già in uso.");
       }
       // Genera il codice di conferma
       const confirmationToken = generateConfirmationToken();
@@ -168,10 +186,9 @@ router.post(
       // Invia l'email di conferma
       await sendConfirmationEmail(email, confirmationToken);
 
-      res.status(201).json(nuovoUtente.dataValues);
+      res.status(StatusCode.Ok).json(nuovoUtente.dataValues);
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore nella creazione dell'utente");
+      next(err);
     }
   }
 );
@@ -179,7 +196,11 @@ router.post(
 router.get(
   "/conferma-email/:token",
   validateRequest(confirmEmailSchema),
-  async (req: PromoterManagerRequest<{ token: string }>, res: Response) => {
+  async (
+    req: PromoterManagerRequest<{ token: string }>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { token } = req.params;
 
     try {
@@ -187,7 +208,7 @@ router.get(
       const user = await Utente.findOne({ where: { token_verifica: token } });
 
       if (!user) {
-        return res.status(400).send("Token non valido o già utilizzato.");
+        throw new BadRequestError("Token non valido o già utilizzato.");
       }
 
       // Controlla se il token è scaduto con Luxon
@@ -195,7 +216,7 @@ router.get(
       const tokenExpires = DateTime.fromISO(user.dataValues.scadenza_token);
 
       if (now > tokenExpires) {
-        return res.status(400).send("Il token di conferma è scaduto.");
+        throw new BadRequestError("Il token di conferma è scaduto.");
       }
 
       // Aggiorna lo stato dell'utente e rimuovi il token di conferma
@@ -208,8 +229,7 @@ router.get(
 
       res.send("Email confermata con successo! Ora puoi effettuare il login.");
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore");
+      next(err);
     }
   }
 );
@@ -217,7 +237,11 @@ router.get(
 router.post(
   "/reinvia-conferma",
   validateRequest(resetPasswordSchema),
-  async (req: PromoterManagerRequestBody<ResetPasswordBody>, res: Response) => {
+  async (
+    req: PromoterManagerRequestBody<ResetPasswordBody>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { email } = req.body;
 
     try {
@@ -227,11 +251,11 @@ router.post(
       });
 
       if (!user) {
-        return res.status(404).send("Utente non trovato.");
+        throw new NotFoundError("Utente non trovato.");
       }
 
       if (user.dataValues?.email_confermata) {
-        return res.status(400).send("L'utente ha già confermato l'email.");
+        throw new BadRequestError("L'utente ha già confermato l'email.");
       }
 
       // Genera un nuovo token e una nuova data di scadenza usando Luxon
@@ -251,13 +275,12 @@ router.post(
       await sendConfirmationEmail(email, newConfirmationToken);
 
       res
-        .status(200)
+        .status(StatusCode.Ok)
         .send(
           "Nuova email di conferma inviata. Controlla la tua casella di posta."
         );
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore");
+      next(err);
     }
   }
 );
@@ -265,7 +288,11 @@ router.post(
 router.post(
   "/reset-password",
   validateRequest(resetPasswordSchema),
-  async (req: PromoterManagerRequestBody<ResetPasswordBody>, res: Response) => {
+  async (
+    req: PromoterManagerRequestBody<ResetPasswordBody>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { email } = req.body;
     try {
       const user: Model<UserModel> | null = await Utente.findOne({
@@ -290,10 +317,9 @@ router.post(
         text: `Hai 15 minuti per cambiare la password su ${confirmationUrl}`,
       });
 
-      res.send("Email cambio password inoltrata con successo!");
+      res.status(StatusCode.Ok).send("Email cambio password inoltrata con successo!");
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore");
+      next(err);
     }
   }
 );

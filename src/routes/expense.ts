@@ -1,5 +1,5 @@
 import { Spesa } from "../db-models/expense";
-import { Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import { Tipo } from "../db-models/type";
 import jwtMiddleware from "../middleware/jwt";
@@ -8,16 +8,20 @@ import {
   updateExpenseSchema,
   deleteExpenseSchema,
 } from "../schema/expense"; 
-import { validateRequest } from "../utils/validate-schema"; 
+import { validateRequest } from "../middleware/validate-schema"; 
 import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
 import { CreateExpenseRequestBody, DeleteExpenseRequestParams, UpdateExpenseRequestBody, UpdateExpenseRequestParams } from "../types/expense";
+import { NotFoundError } from "../errors/not-found-error";
+import { Model } from "sequelize";
+import { UserModel } from "../models/user";
+import { UnauthorizedError } from "../errors/unauthorized-error";
 
 const router = Router();
 
 router.use(jwtMiddleware());
 
 // Endpoint per recuperare tutte le spese
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const spese = await Spesa.findAll({
       include: [
@@ -29,13 +33,12 @@ router.get("/", async (req: Request, res: Response) => {
     });
     res.json(spese);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero delle spese");
+    next(err);
   }
 });
 
 // API per recuperare le note di un utente
-router.get("/utente", async (req: Request, res: Response) => {
+router.get("/utente", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const spese = await Spesa.findAll({
       where: { utente_id: req.user?.id },
@@ -48,8 +51,7 @@ router.get("/utente", async (req: Request, res: Response) => {
     });
     res.json(spese);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero delle spese");
+    next(err);
   }
 });
 
@@ -59,7 +61,8 @@ router.post(
   validateRequest(createExpenseSchema),
   async (
     req: PromoterManagerRequestBody<CreateExpenseRequestBody>,
-    res: Response
+    res: Response,
+    next: NextFunction,
   ) => {
     const { descrizione, importo, tipoId, guadagno_spesa, tipo_importo } =
       req.body;
@@ -69,15 +72,16 @@ router.post(
     try {
       // Verifica se l'utente esiste
       const utente = await Utente.findByPk(utenteId);
+
       if (!utente) {
-        return res.status(404).json({ message: "Utente non trovato" });
+        throw new NotFoundError("Utente non trovato");
       }
 
       if (!guadagno_spesa) {
         // Verifica se il tipo esiste
         const tipo = await Tipo.findByPk(tipoId);
         if (!tipo) {
-          return res.status(404).json({ message: "Tipo non trovato" });
+          throw new NotFoundError("Tipo non trovato");
         }
       }
 
@@ -94,10 +98,7 @@ router.post(
       // Rispondi con la spesa creata
       res.status(201).json(nuovaSpesa);
     } catch (err) {
-      console.error(err);
-      res
-        .status(500)
-        .json({ message: "Errore durante la creazione della spesa" });
+      next(err);
     }
   }
 );
@@ -111,15 +112,24 @@ router.put(
       UpdateExpenseRequestParams,
       UpdateExpenseRequestBody
     >,
-    res: Response
+    res: Response,
+    next: NextFunction,
   ) => {
     const { id } = req.params;
     const { descrizione, importo, tipoId, tipo_importo } = req.body;
 
+    const userId = req.user?.id;
+
     try {
       const spesa = await Spesa.findByPk(id);
       if (!spesa) {
-        return res.status(404).json({ message: "Spesa non trovata" });
+        throw new NotFoundError("Spesa non trovata");
+      }
+
+      const utente: Model<UserModel> | null = await Utente.findByPk(userId);
+
+      if (!(utente?.dataValues?.id === spesa.dataValues.utente_id)) {
+        throw new UnauthorizedError("Spesa non appartenente all'utente");
       }
 
       const spesaUpdated = await spesa.update({
@@ -128,9 +138,10 @@ router.put(
         tipo_id: tipoId,
         tipo_importo,
       });
+
       res.json(spesaUpdated);
     } catch (error) {
-      res.status(500).json({ message: "Errore del server", error });
+      next(error);
     }
   }
 );
@@ -141,21 +152,30 @@ router.delete(
   validateRequest(deleteExpenseSchema),
   async (
     req: PromoterManagerRequest<DeleteExpenseRequestParams>,
-    res: Response
+    res: Response,
+    next: NextFunction
   ) => {
     const { id } = req.params;
 
+    const userId = req.user?.id;
+    
     try {
       const spesa = await Spesa.findByPk(id);
+
       if (!spesa) {
-        return res.status(404).json({ message: "Spesa non trovata" });
+        throw new NotFoundError("Spesa non trovata");
+      }
+
+      const utente: Model<UserModel> | null = await Utente.findByPk(userId);
+
+      if (!(utente?.dataValues?.id === spesa.dataValues.utente_id)) {
+        throw new UnauthorizedError("Spesa non appartenente all'utente");
       }
 
       await spesa.destroy();
       res.json({ message: "Spesa eliminata" });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Errore del server" });
+      next(error);
     }
   }
 );

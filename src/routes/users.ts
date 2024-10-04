@@ -1,5 +1,5 @@
 import { Utente } from "../db-models/user";
-import { Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import jwtMiddleware from "../middleware/jwt";
 import speakeasy from "speakeasy";
 import qrcode from "qrcode";
@@ -10,32 +10,33 @@ import { Team } from "../db-models/team";
 import bcrypt from 'bcryptjs';
 import { UserModel } from "../models/user";
 import { Model } from "sequelize";
-import { validateRequest } from "../utils/validate-schema";
+import { validateRequest } from "../middleware/validate-schema";
 import { availabilitySchema, changePasswordSchema, getUserSchema, updateUserSchema } from "../schema/users";
 import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
 import { AvailabilityBody, ChangePasswordBody, GetUserParams, UpdateUserBody, UpdateUserParams } from "../types/users";
+import { NotFoundError } from "../errors/not-found-error";
+import { UnauthanteticatedError } from "../errors/unauthenticated-error";
 
 const router = Router();
 
 router.use(jwtMiddleware());
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const utenti = await Utente.findAll();
     res.json(utenti);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero degli utenti");
+    next(err);
   }
 });
 
-router.get("/abilita-2fa", async (req: Request, res: Response) => {
+router.get("/abilita-2fa", async (req: Request, res: Response, next: NextFunction) => {
   const userId = req.user?.id; // Assumendo che req.user sia popolato dal middleware JWT
 
   try {
     const user = await Utente.findByPk(userId);
     if (!user) {
-      return res.status(404).json({ message: "Utente non trovato" });
+      throw new NotFoundError("Utente non trovato");
     }
 
     // Genera un nuovo segreto per la 2FA
@@ -67,19 +68,17 @@ router.get("/abilita-2fa", async (req: Request, res: Response) => {
       secret: secret.base32,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Errore durante l'abilitazione della 2FA", error });
+    next(error);
   }
 });
 
-router.get("/disabilita-2fa", async (req: Request, res: Response) => {
+router.get("/disabilita-2fa", async (req: Request, res: Response, next: NextFunction) => {
   const userId = req.user?.id; // Assumendo che req.user sia popolato dal middleware JWT
 
   try {
     const user = await Utente.findByPk(userId);
     if (!user) {
-      return res.status(404).json({ message: "Utente non trovato" });
+      throw new NotFoundError("Utente non trovato");
     }
 
     await Utente.update(
@@ -94,10 +93,7 @@ router.get("/disabilita-2fa", async (req: Request, res: Response) => {
 
     res.json({ message: "2FA disabilitata con successo" });
   } catch (error) {
-    res.status(500).json({
-      message: "Errore durante la disabilitazione della 2FA",
-      error,
-    });
+    next(error);
   }
 });
 
@@ -105,17 +101,17 @@ router.get("/disabilita-2fa", async (req: Request, res: Response) => {
 router.get(
   "/:id",
   validateRequest(getUserSchema),
-  async (req: PromoterManagerRequest<GetUserParams>, res: Response) => {
+  async (req: PromoterManagerRequest<GetUserParams>, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
       const utente = await Utente.findByPk(id);
       if (!utente) {
-        return res.status(404).send("Utente non trovato");
+        throw new NotFoundError("Utente non trovato");
       }
       res.json(utente);
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore nel recupero dell'utente");
+      next(err);
+
     }
   }
 );
@@ -125,7 +121,7 @@ router.put(
   validateRequest(updateUserSchema),
   async (
     req: PromoterManagerRequest<UpdateUserParams, UpdateUserBody>,
-    res: Response
+    res: Response, next: NextFunction
   ) => {
     const { id } = req.params;
     const { referralLink, linkAzienda, linkVideo } = req.body;
@@ -133,7 +129,7 @@ router.put(
     try {
       const utente = await Utente.findByPk(id);
       if (!utente) {
-        return res.status(404).json({ message: "Utente non trovato" });
+        throw new NotFoundError("Utente non trovato");
       }
 
       await utente.update({
@@ -144,7 +140,7 @@ router.put(
 
       res.json(utente);
     } catch (error) {
-      res.status(500).json({ message: "Errore del server", error });
+      next(error);
     }
   }
 );
@@ -152,7 +148,7 @@ router.put(
 router.post(
   "/disponibilita",
   validateRequest(availabilitySchema),
-  async (req: PromoterManagerRequestBody<AvailabilityBody>, res: Response) => {
+  async (req: PromoterManagerRequestBody<AvailabilityBody>, res: Response, next: NextFunction) => {
     const { emails = [], token } = req.body;
     const name = req.user?.name;
     const emailUser = req.user?.email;
@@ -207,8 +203,7 @@ router.post(
 
       res.send("Email inoltrate con successo!");
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore");
+      next(err);
     }
   }
 );
@@ -218,7 +213,7 @@ router.post(
   validateRequest(changePasswordSchema),
   async (
     req: PromoterManagerRequestBody<ChangePasswordBody>,
-    res: Response
+    res: Response, next: NextFunction
   ) => {
     const { password } = req.body;
     const id = req.user?.id;
@@ -229,7 +224,7 @@ router.post(
 
       const utente: Model<UserModel> | null = await Utente.findByPk(id);
       if (!utente) {
-        return res.status(404).json({ message: "Utente non trovato" });
+        throw new NotFoundError("Utente non trovato");
       }
 
       const passwordIsValid = await bcrypt.compare(
@@ -238,9 +233,7 @@ router.post(
       );
 
       if (passwordIsValid) {
-        return res.status(401).json({
-          message: "Password uguale alla precedente, scegline un'altra",
-        });
+       throw new UnauthanteticatedError("Password uguale alla precedente, scegline un'altra");
       }
 
       await utente.update(
@@ -254,8 +247,7 @@ router.post(
 
       res.send("Cambio password effettuato con successo!");
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore");
+      next(err);
     }
   }
 );

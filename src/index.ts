@@ -15,10 +15,14 @@ import sequelize from './utils/sequelize';
 import { __BASE_PATH__, __ORIGIN__, __PORT__ } from './constants/environment';
 import cron from 'node-cron';
 import { checkAndSendNoteReminders } from './utils/send-push';
+import { webAppUrl } from './utils/send-email';
+import { logger } from './utils/logger';
+import { requestInterceptor } from './middleware/request-interceptor';
+import { errorInterceptor } from './middleware/error-interceptor';
 
 export const app = express();
 
-const allowedOrigins = [__ORIGIN__, 'https://promoter-manager-web-3d2066e2c8f2.herokuapp.com'];
+const allowedOrigins = [__ORIGIN__, webAppUrl];
 
 // Middleware
 app.use(cors({
@@ -41,7 +45,7 @@ app.use(bodyParser.json());
 
 if (process.env.NODE_ENV !== 'test') {
   cron.schedule('* * * * *', async () => {
-    console.log('Checking for note reminders to send...');
+    logger.info('Checking for note reminders to send...');
     await checkAndSendNoteReminders();
   });
 }
@@ -49,14 +53,18 @@ if (process.env.NODE_ENV !== 'test') {
 const testDatabaseConnection = async () => {
     try {
         await sequelize.authenticate();
-        console.log('Connessione al database stabilita con successo.');
+        logger.info('Connessione al database stabilita con successo.');
     } catch (error) {
-        console.error('Impossibile connettersi al database:', error);
+        logger.error('Impossibile connettersi al database:', error);
         process.exit(1); // Esci con un codice di errore
     }
 };
 
 testDatabaseConnection();
+
+
+app.use(requestInterceptor);
+
 
 // Routes
 app.use(`${__BASE_PATH__}/spese`, expensesRouter);
@@ -70,8 +78,10 @@ app.use(`${__BASE_PATH__}/tipi`, typeRouter);
 app.use(`${__BASE_PATH__}/link-utili`, usefulLinksRouter);
 app.use(`${__BASE_PATH__}/priorita`, priorityRouter);
 
+app.use(errorInterceptor);
+
 if (process.env.NODE_ENV !== 'test') {
   app.listen(__PORT__, () => {
-    console.log(`Server running at http://localhost:${__PORT__}`);
+    logger.info(`Server running at http://localhost:${__PORT__}`);
   });
 }

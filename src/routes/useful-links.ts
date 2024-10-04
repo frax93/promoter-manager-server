@@ -1,19 +1,20 @@
-import { Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import jwtMiddleware from "../middleware/jwt";
 import { LinkUtili } from "../db-models/useful-links";
 import { UsefulLinkModel } from "../models/useful-links";
 import { Model } from "sequelize";
 import { PromoterManagerRequestBody } from "../types/request";
 import { CreateUsefulLinkBody } from "../types/useful-links";
-import { validateRequest } from "../utils/validate-schema";
+import { validateRequest } from "../middleware/validate-schema";
 import { createUsefulLinkSchema } from "../schema/useful-links";
+import { BadRequestError } from "../errors/bad-request-error";
 
 const router = Router();
 
 router.use(jwtMiddleware());
 
 // API per recuperare i link di un utente
-router.get("/utente", async (req: Request, res: Response) => {
+router.get("/utente", async (req: Request, res: Response, next: NextFunction) => {
   const idUtente = req.user?.id;
   try {
     const links = await LinkUtili.findAll({
@@ -21,8 +22,7 @@ router.get("/utente", async (req: Request, res: Response) => {
     });
     res.json(links);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero dei link");
+    next(err);
   }
 });
 
@@ -31,16 +31,17 @@ router.put(
   validateRequest(createUsefulLinkSchema),
   async (
     req: PromoterManagerRequestBody<CreateUsefulLinkBody>,
-    res: Response
+    res: Response,
+    next: NextFunction
   ) => {
     const { links } = req.body; // links è un array di oggetti { id, url }
     const userId = req.user?.id;
 
-    if (!Array.isArray(links)) {
-      return res.status(400).json({ message: "Richiesta non valida" });
-    }
-
     try {
+      if (!Array.isArray(links)) {
+        throw new BadRequestError("Richiesta non valida");
+      }
+  
       // Recupera i link esistenti per l'utente
       const existingLinks: Model<UsefulLinkModel>[] | null =
         await LinkUtili.findAll({
@@ -80,8 +81,7 @@ router.put(
 
       return res.status(200).json({ message: "Link aggiornati con successo" });
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Errore del server" });
+      next(error);
     }
   }
 );

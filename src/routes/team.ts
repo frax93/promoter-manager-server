@@ -1,5 +1,5 @@
 import { Team } from "../db-models/team";
-import { Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import jwtMiddleware from "../middleware/jwt";
 import { UtenteTeam } from "../db-models/user-team";
@@ -8,27 +8,29 @@ import { DateTime } from "luxon";
 import { Model } from "sequelize";
 import { TeamModel } from "../models/team";
 import { UserModel } from "../models/user";
-import { validateRequest } from "../utils/validate-schema";
+import { validateRequest } from "../middleware/validate-schema";
 import { createTeamSchema, deleteTeamSchema, getTeamSchema, updateTeamSchema } from "../schema/team";
 import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/request";
 import { CreateTeamBody, DeleteTeamParams, GetTeamParams, UpdateTeamBody, UpdateTeamParams } from "../types/team";
+import { NotFoundError } from "../errors/not-found-error";
+import { BadRequestError } from "../errors/bad-request-error";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
 router.use(jwtMiddleware());
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const teams = await Team.findAll();
     res.json(teams);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero dei team");
+    next(err);
   }
 });
 
 // Route per ottenere tutti i team di un utente
-router.get("/utente", async (req: Request, res: Response) => {
+router.get("/utente", async (req: Request, res: Response, next: NextFunction) => {
   const idUtente = req.user?.id;
 
   try {
@@ -53,7 +55,7 @@ router.get("/utente", async (req: Request, res: Response) => {
 
     // Verifica se l'utente esiste
     if (!utente) {
-      return res.status(404).json({ message: "Utente non trovato" });
+      throw new NotFoundError("Utente non trovato");
     }
 
     // Recupera tutti i team associati all'utente
@@ -61,8 +63,7 @@ router.get("/utente", async (req: Request, res: Response) => {
 
     res.status(200).json(teams);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Errore nel recupero dei team" });
+   next(err);
   }
 });
 
@@ -70,17 +71,16 @@ router.get("/utente", async (req: Request, res: Response) => {
 router.get(
   "/:id",
   validateRequest(getTeamSchema),
-  async (req: PromoterManagerRequest<GetTeamParams>, res: Response) => {
+  async (req: PromoterManagerRequest<GetTeamParams>, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
       const team = await Team.findByPk(id);
       if (!team) {
-        return res.status(404).send("Team non trovato");
+        throw new NotFoundError("Team non trovato");
       }
       res.json(team);
     } catch (err) {
-      console.error(err);
-      res.status(500).send("Errore nel recupero del team");
+      next(err);
     }
   }
 );
@@ -88,7 +88,7 @@ router.get(
 router.post(
   "/utente",
   validateRequest(createTeamSchema),
-  async (req: PromoterManagerRequestBody<CreateTeamBody>, res: Response) => {
+  async (req: PromoterManagerRequestBody<CreateTeamBody>, res: Response, next: NextFunction) => {
     const { nome, descrizione, colore, utentiIds } = req.body;
     const idUtente = req.user?.id;
 
@@ -96,7 +96,7 @@ router.post(
       const utente = await Utente.findByPk(idUtente);
 
       if (!utente) {
-        return res.status(404).json({ message: "Utente non trovato" });
+        throw new NotFoundError("Utente non trovato");
       }
 
       const nuovoTeam = await Team.create({ nome, descrizione, colore });
@@ -110,9 +110,7 @@ router.post(
       const utenti = await Utente.findAll({ where: { id: utentiIds } });
 
       if (utentiIds && utenti.length !== utentiIds.length) {
-        return res
-          .status(400)
-          .json({ message: "Alcuni utenti non sono stati trovati" });
+        throw new BadRequestError("Alcuni utenti non sono stati trovati");
       }
 
       // Aggiunge gli utenti al team
@@ -133,8 +131,7 @@ router.post(
 
       res.status(201).json(nuovoTeam);
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Errore nella creazione del team" });
+      next(err);
     }
   }
 );
@@ -145,7 +142,8 @@ router.put(
   validateRequest(updateTeamSchema),
   async (
     req: PromoterManagerRequest<UpdateTeamParams, UpdateTeamBody>,
-    res: Response
+    res: Response,
+    next: NextFunction
   ) => {
     const { id } = req.params;
     const { nome, descrizione, utentiIds: userIds, colore } = req.body;
@@ -162,7 +160,7 @@ router.put(
       });
 
       if (!team) {
-        return res.status(404).json({ message: "Team non trovato" });
+        throw new NotFoundError("Team non trovato");
       }
 
       // Aggiorna i dettagli del team
@@ -200,8 +198,8 @@ router.put(
           (id: number) => !userIdsToAdd.includes(id)
         );
 
-        console.log(userIdsToAdd, "to add");
-        console.log(usersToRemove, "to remove");
+        logger.debug(userIdsToAdd + "to add");
+        logger.debug(usersToRemove + "to remove");
 
         await Promise.all(
           (usersToAdd as Array<number>).map(async (id) => {
@@ -231,8 +229,7 @@ router.put(
 
       res.json({ message: "Team aggiornato con successo" });
     } catch (error) {
-      console.error("Errore durante l'aggiornamento del team:", error);
-      res.status(500).json({ message: "Errore interno del server" });
+      next(error);
     }
   }
 );
@@ -241,7 +238,11 @@ router.put(
 router.delete(
   "/:id",
   validateRequest(deleteTeamSchema),
-  async (req: PromoterManagerRequest<DeleteTeamParams>, res: Response) => {
+  async (
+    req: PromoterManagerRequest<DeleteTeamParams>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { id } = req.params;
 
     try {
@@ -249,7 +250,7 @@ router.delete(
       const team: Model<TeamModel> | null = await Team.findByPk(id);
 
       if (!team) {
-        return res.status(404).json({ message: "Team non trovato" });
+        throw new NotFoundError("Team non trovato");
       }
 
       // Effettua la cancellazione logica impostando il flag attivo su false
@@ -257,8 +258,7 @@ router.delete(
 
       res.json({ message: "Team disattivato con successo" });
     } catch (error) {
-      console.error("Errore durante la disattivazione del team:", error);
-      res.status(500).json({ message: "Errore interno del server" });
+      next(error);
     }
   }
 );

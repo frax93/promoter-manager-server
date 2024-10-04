@@ -1,5 +1,5 @@
 import { Note } from "../db-models/note";
-import { Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import { Utente } from "../db-models/user";
 import jwtMiddleware from "../middleware/jwt";
 import { Priority } from "../db-models/priority";
@@ -15,63 +15,73 @@ import {
   UpdateNoteBody,
   UpdateNoteParams,
 } from "../types/note";
-import { validateRequest } from "../utils/validate-schema";
+import { validateRequest } from "../middleware/validate-schema";
 import {
   createNoteSchema,
   deleteNoteSchema,
   markCompleteNoteSchema,
   updateNoteSchema,
 } from "../schema/note";
+import { NotFoundError } from "../errors/not-found-error";
+import { BadRequestError } from "../errors/bad-request-error";
+import { UnauthorizedError } from "../errors/unauthorized-error";
+import { UserModel } from "../models/user";
 
 const router = Router();
 
 router.use(jwtMiddleware());
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const note = await Note.findAll({
       order: [["data_creazione", "DESC"]],
     });
     res.json(note);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero delle note");
+    next(err);
   }
 });
 
 // API per recuperare le note di un utente
-router.get("/utente", async (req: Request, res: Response) => {
-  const idUtente = req.user?.id;
-  try {
-    const note = await Note.findAll({
-      where: { utente_id: idUtente },
-      include: [
-        {
-          model: Priority,
-          as: "priority",
-        },
-      ],
-    });
-    res.json(note);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Errore nel recupero delle note");
+router.get(
+  "/utente",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const idUtente = req.user?.id;
+    try {
+      const note = await Note.findAll({
+        where: { utente_id: idUtente },
+        include: [
+          {
+            model: Priority,
+            as: "priority",
+          },
+        ],
+      });
+      res.json(note);
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 // Endpoint per creare una nuova nota associata a un utente
 router.post(
   "/",
   validateRequest(createNoteSchema),
-  async (req: PromoterManagerRequestBody<CreateNoteBody>, res: Response) => {
+  async (
+    req: PromoterManagerRequestBody<CreateNoteBody>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { contenuto, reminderDate, token, priorita } = req.body;
     const idUtente = req.user?.id;
 
     try {
       // Verifica se l'utente esiste
       const utente = await Utente.findByPk(idUtente);
+
       if (!utente) {
-        return res.status(404).json({ message: "Utente non trovato" });
+        throw new NotFoundError("Utente non trovato");
       }
 
       // Crea la nuova nota associata all'utente
@@ -86,10 +96,7 @@ router.post(
       // Rispondi con la nota creata
       res.status(201).json(nuovaNota);
     } catch (err) {
-      console.error(err);
-      res
-        .status(500)
-        .json({ message: "Errore durante la creazione della nota" });
+      next(err);
     }
   }
 );
@@ -99,22 +106,31 @@ router.patch(
   validateRequest(markCompleteNoteSchema),
   async (
     req: PromoterManagerRequest<UpdateNoteParams, UpdateNoteBody>,
-    res: Response
+    res: Response,
+    next: NextFunction
   ) => {
     const { id } = req.params;
     const { completed } = req.body;
 
-    if (typeof completed !== "boolean") {
-      return res
-        .status(400)
-        .json({ error: "Il campo completed deve essere un booleano." });
-    }
+    const userId = req.user?.id;
 
     try {
+      if (typeof completed !== "boolean") {
+        throw new BadRequestError(
+          "Il campo completed deve essere un booleano."
+        );
+      }
+
       const note = await Note.findByPk(id);
 
       if (!note) {
-        return res.status(404).json({ error: "Nota non trovata." });
+        throw new NotFoundError("Nota non trovata.");
+      }
+
+      const utente: Model<UserModel> | null = await Utente.findByPk(userId);
+
+      if (!(utente?.dataValues?.id === note.dataValues.utente_id)) {
+        throw new UnauthorizedError("Nota non appartenente all'utente");
       }
 
       const responseNote = await note.update({
@@ -127,8 +143,7 @@ router.patch(
 
       res.status(200).json(response);
     } catch (error) {
-      console.error("Errore nel marcare la nota come completata:", error);
-      res.status(500).json({ error: "Errore del server." });
+      next(error);
     }
   }
 );
@@ -139,15 +154,25 @@ router.put(
   validateRequest(updateNoteSchema),
   async (
     req: PromoterManagerRequest<UpdateNoteParams, UpdateNoteBody>,
-    res: Response
+    res: Response,
+    next: NextFunction
   ) => {
     const { id } = req.params;
     const { contenuto, reminderDate, priorita } = req.body;
 
+    const userId = req.user?.id;
+
     try {
       let note: Model<NoteModel> | null = await Note.findByPk(id);
+
       if (!note) {
-        return res.status(404).json({ message: "Nota non trovata" });
+        throw new NotFoundError("Nota non trovata");
+      }
+
+      const utente: Model<UserModel> | null = await Utente.findByPk(userId);
+
+      if (!(utente?.dataValues?.id === note.dataValues.utente_id)) {
+        throw new UnauthorizedError("Nota non appartenente all'utente");
       }
 
       const responseNote = await note.update({
@@ -165,7 +190,7 @@ router.put(
 
       res.status(200).json(response);
     } catch (error) {
-      res.status(500).json({ message: "Errore del server", error });
+      next(error);
     }
   }
 );
@@ -174,19 +199,31 @@ router.put(
 router.delete(
   "/:id",
   validateRequest(deleteNoteSchema),
-  async (req: PromoterManagerRequest<DeleteNoteParams>, res: Response) => {
+  async (
+    req: PromoterManagerRequest<DeleteNoteParams>,
+    res: Response,
+    next: NextFunction
+  ) => {
     const { id } = req.params;
 
+    const userId = req.user?.id;
+
     try {
-      const note = await Note.findByPk(id);
+      const note: Model<NoteModel> | null = await Note.findByPk(id);
       if (!note) {
-        return res.status(404).json({ message: "Nota non trovata" });
+        throw new NotFoundError("Nota non trovata");
+      }
+
+      const utente: Model<UserModel> | null = await Utente.findByPk(userId);
+
+      if (!(utente?.dataValues?.id === note.dataValues.utente_id)) {
+        throw new UnauthorizedError("Nota non appartenente all'utente");
       }
 
       await note.destroy();
       res.status(200).json({ message: "Nota eliminata" });
     } catch (error) {
-      res.status(500).json({ message: "Errore del server", error });
+      next(error);
     }
   }
 );

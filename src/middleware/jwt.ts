@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { __JWT_SECRET__ } from "../constants/environment";
 import { JwtUser } from "../models/jwt-user";
+import { logger } from "../utils/logger";
+import { UnauthanteticatedError } from "../errors/unauthenticated-error";
 
 const jwtMiddleware = () => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -13,9 +15,7 @@ const jwtMiddleware = () => {
         : null;
 
     if (!token) {
-      return res
-        .status(401)
-        .json({ message: "Accesso negato. Token non fornito." });
+      throw new UnauthanteticatedError("Accesso negato");
     }
 
     try {
@@ -26,10 +26,10 @@ const jwtMiddleware = () => {
       ) as JwtUser;
       req.user = decoded; // Salva i dati decodificati (ad es. userId) nella richiesta
 
-      console.log(req.user, "utente loggato");
+      logger.info(`${req.user} utente loggato`);
       next();
     } catch (err) {
-      return res.status(401).json({ message: "Token non valido." });
+      throw new UnauthanteticatedError("Token non valido");
     }
   };
 };

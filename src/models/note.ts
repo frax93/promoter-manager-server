@@ -5,4 +5,5 @@ export interface NoteModel {
   data_creazione: string;
   reminder_date: Date | null;
   token?: string;
+  utente_id: string;
 }
