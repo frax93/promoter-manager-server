@@ -31,6 +31,7 @@ import { NotFoundError } from "../errors/not-found-error";
 import { UnauthorizedError } from "../errors/unauthorized-error";
 import { UserModel } from "../models/user";
 import { ExpenseModel } from "../models/expense";
+import { StatusCode } from "../constants/status-code";
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.use(jwtMiddleware());
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const eventi = await Evento.findAll();
-    res.json(eventi);
+    res.status(StatusCode.Ok).json(eventi);
   } catch (err) {
     next(err);
   }
@@ -80,7 +81,7 @@ router.get(
         throw new UnauthorizedError("Spese non appartenenti all'utente");
       }
 
-      res.json(spese);
+      res.status(StatusCode.Ok).json(spese);
     } catch (err) {
       next(err);
     }
@@ -146,7 +147,7 @@ router.get(
           : []
       );
 
-      res.status(200).json(eventi);
+      res.status(StatusCode.Ok).json(eventi);
     } catch (err) {
       next(err);
     }
@@ -244,7 +245,7 @@ router.post(
       }
 
       // Rispondi con l'evento creato
-      res.status(201).json(nuovoEvento);
+      res.status(StatusCode.Created).json(nuovoEvento);
     } catch (err) {
       next(err);
     }
@@ -329,7 +330,7 @@ router.put(
         }
       }
   
-      return res.json(eventoUpdated);
+      return res.status(StatusCode.Created).json(eventoUpdated);
     } catch (error) {
       next(error);
     }
@@ -398,7 +399,7 @@ router.delete(
         }
       }
 
-      return res.json({ message: "Evento eliminato con successo" });
+      return res.status(StatusCode.Created).json({ message: "Evento eliminato con successo" });
     } catch (error) {
       next(error);
     }

@@ -15,6 +15,7 @@ import { CreateTeamBody, DeleteTeamParams, GetTeamParams, UpdateTeamBody, Update
 import { NotFoundError } from "../errors/not-found-error";
 import { BadRequestError } from "../errors/bad-request-error";
 import { logger } from "../utils/logger";
+import { StatusCode } from "../constants/status-code";
 
 const router = Router();
 
@@ -23,7 +24,7 @@ router.use(jwtMiddleware());
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const teams = await Team.findAll();
-    res.json(teams);
+    res.status(StatusCode.Ok).json(teams);
   } catch (err) {
     next(err);
   }
@@ -61,7 +62,7 @@ router.get("/utente", async (req: Request, res: Response, next: NextFunction) =>
     // Recupera tutti i team associati all'utente
     const teams = utente.dataValues.team;
 
-    res.status(200).json(teams);
+    res.status(StatusCode.Ok).json(teams);
   } catch (err) {
    next(err);
   }
@@ -78,7 +79,7 @@ router.get(
       if (!team) {
         throw new NotFoundError("Team non trovato");
       }
-      res.json(team);
+      res.status(StatusCode.Ok).json(team);
     } catch (err) {
       next(err);
     }
@@ -129,7 +130,7 @@ router.post(
         team_id: nuovoTeam.dataValues.id,
       });
 
-      res.status(201).json(nuovoTeam);
+      res.status(StatusCode.Created).json(nuovoTeam);
     } catch (err) {
       next(err);
     }
@@ -227,7 +228,7 @@ router.put(
         }
       }
 
-      res.json({ message: "Team aggiornato con successo" });
+      res.status(StatusCode.Created).json({ message: "Team aggiornato con successo" });
     } catch (error) {
       next(error);
     }
@@ -256,7 +257,7 @@ router.delete(
       // Effettua la cancellazione logica impostando il flag attivo su false
       await team.update({ attivo: false, data_disattivo: DateTime.now() });
 
-      res.json({ message: "Team disattivato con successo" });
+      res.status(StatusCode.Created).json({ message: "Team disattivato con successo" });
     } catch (error) {
       next(error);
     }

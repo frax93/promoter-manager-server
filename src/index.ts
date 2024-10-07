@@ -10,6 +10,7 @@ import noteRouter from './routes/note';
 import typeRouter from './routes/type';
 import usefulLinksRouter from './routes/useful-links';
 import priorityRouter from './routes/priority';
+import errorLogsRouter from './routes/error-logs';
 import cors from 'cors';
 import sequelize from './utils/sequelize';
 import { __BASE_PATH__, __ORIGIN__, __PORT__ } from './constants/environment';
@@ -77,6 +78,7 @@ app.use(`${__BASE_PATH__}/note`, noteRouter);
 app.use(`${__BASE_PATH__}/tipi`, typeRouter);
 app.use(`${__BASE_PATH__}/link-utili`, usefulLinksRouter);
 app.use(`${__BASE_PATH__}/priorita`, priorityRouter);
+app.use(`${__BASE_PATH__}/logs`, errorLogsRouter);
 
 app.use(errorInterceptor);
 

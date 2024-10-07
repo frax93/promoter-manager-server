@@ -16,6 +16,7 @@ import { PromoterManagerRequest, PromoterManagerRequestBody } from "../types/req
 import { AvailabilityBody, ChangePasswordBody, GetUserParams, UpdateUserBody, UpdateUserParams } from "../types/users";
 import { NotFoundError } from "../errors/not-found-error";
 import { UnauthanteticatedError } from "../errors/unauthenticated-error";
+import { StatusCode } from "../constants/status-code";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.use(jwtMiddleware());
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const utenti = await Utente.findAll();
-    res.json(utenti);
+    res.status(StatusCode.Ok).json(utenti);
   } catch (err) {
     next(err);
   }
@@ -62,7 +63,7 @@ router.get("/abilita-2fa", async (req: Request, res: Response, next: NextFunctio
     // Genera il QR code per l'app di autenticazione
     const qrCode = await qrcode.toDataURL(otpAuthUrl);
 
-    res.json({
+    res.status(StatusCode.Created).json({
       message: "2FA abilitata con successo",
       qrCode,
       secret: secret.base32,
@@ -91,7 +92,7 @@ router.get("/disabilita-2fa", async (req: Request, res: Response, next: NextFunc
       }
     );
 
-    res.json({ message: "2FA disabilitata con successo" });
+    res.status(StatusCode.Created).json({ message: "2FA disabilitata con successo" });
   } catch (error) {
     next(error);
   }
@@ -108,10 +109,9 @@ router.get(
       if (!utente) {
         throw new NotFoundError("Utente non trovato");
       }
-      res.json(utente);
+      res.status(StatusCode.Ok).json(utente);
     } catch (err) {
       next(err);
-
     }
   }
 );
@@ -138,7 +138,7 @@ router.put(
         linkvideo: linkVideo,
       });
 
-      res.json(utente);
+      res.status(StatusCode.Created).json(utente);
     } catch (error) {
       next(error);
     }
@@ -201,7 +201,7 @@ router.post(
         });
       }
 
-      res.send("Email inoltrate con successo!");
+      res.status(StatusCode.Created).send("Email inoltrate con successo!");
     } catch (err) {
       next(err);
     }
@@ -245,7 +245,7 @@ router.post(
         }
       );
 
-      res.send("Cambio password effettuato con successo!");
+      res.status(StatusCode.Created).send("Cambio password effettuato con successo!");
     } catch (err) {
       next(err);
     }

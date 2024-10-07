@@ -10,9 +10,6 @@ import { CalendarModel } from "../models/calendar";
 import { Model } from "sequelize";
 import { NotFoundError } from "../errors/not-found-error";
 import { StatusCode } from "../constants/status-code";
-import { UserModel } from "../models/user";
-import { Utente } from "../db-models/user";
-import { UnauthorizedError } from "../errors/unauthorized-error";
 
 const router = Router();
 
@@ -23,7 +20,7 @@ router.use(jwtMiddleware());
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const calendari = await Calendario.findAll();
-    res.json(calendari);
+    res.status(StatusCode.Ok).json(calendari);
   } catch (err) {
     next(err);
   }

@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, { NextFunction, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Utente } from "../db-models/user";
@@ -186,7 +186,7 @@ router.post(
       // Invia l'email di conferma
       await sendConfirmationEmail(email, confirmationToken);
 
-      res.status(StatusCode.Ok).json(nuovoUtente.dataValues);
+      res.status(StatusCode.Created).json(nuovoUtente.dataValues);
     } catch (err) {
       next(err);
     }
@@ -227,7 +227,7 @@ router.get(
         scadenza_token: null,
       });
 
-      res.send("Email confermata con successo! Ora puoi effettuare il login.");
+      res.status(StatusCode.Ok).send("Email confermata con successo! Ora puoi effettuare il login.");
     } catch (err) {
       next(err);
     }

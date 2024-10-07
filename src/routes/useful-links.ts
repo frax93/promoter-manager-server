@@ -8,6 +8,7 @@ import { CreateUsefulLinkBody } from "../types/useful-links";
 import { validateRequest } from "../middleware/validate-schema";
 import { createUsefulLinkSchema } from "../schema/useful-links";
 import { BadRequestError } from "../errors/bad-request-error";
+import { StatusCode } from "../constants/status-code";
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.get("/utente", async (req: Request, res: Response, next: NextFunction) =>
     const links = await LinkUtili.findAll({
       where: { utente_id: idUtente },
     });
-    res.json(links);
+    res.status(StatusCode.Ok).json(links);
   } catch (err) {
     next(err);
   }
@@ -79,7 +80,7 @@ router.put(
         });
       }
 
-      return res.status(200).json({ message: "Link aggiornati con successo" });
+      return res.status(StatusCode.Created).json({ message: "Link aggiornati con successo" });
     } catch (error) {
       next(error);
     }

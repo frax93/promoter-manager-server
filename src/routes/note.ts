@@ -26,6 +26,7 @@ import { NotFoundError } from "../errors/not-found-error";
 import { BadRequestError } from "../errors/bad-request-error";
 import { UnauthorizedError } from "../errors/unauthorized-error";
 import { UserModel } from "../models/user";
+import { StatusCode } from "../constants/status-code";
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
     const note = await Note.findAll({
       order: [["data_creazione", "DESC"]],
     });
-    res.json(note);
+    res.status(StatusCode.Ok).json(note);
   } catch (err) {
     next(err);
   }
@@ -57,7 +58,7 @@ router.get(
           },
         ],
       });
-      res.json(note);
+      res.status(StatusCode.Ok).json(note);
     } catch (err) {
       next(err);
     }
@@ -94,7 +95,7 @@ router.post(
       });
 
       // Rispondi con la nota creata
-      res.status(201).json(nuovaNota);
+      res.status(StatusCode.Created).json(nuovaNota);
     } catch (err) {
       next(err);
     }
@@ -141,7 +142,7 @@ router.patch(
         ...responseNote,
       };
 
-      res.status(200).json(response);
+      res.status(StatusCode.Created).json(response);
     } catch (error) {
       next(error);
     }
@@ -188,7 +189,7 @@ router.put(
         priorita,
       };
 
-      res.status(200).json(response);
+      res.status(StatusCode.Created).json(response);
     } catch (error) {
       next(error);
     }
@@ -221,7 +222,7 @@ router.delete(
       }
 
       await note.destroy();
-      res.status(200).json({ message: "Nota eliminata" });
+      res.status(StatusCode.Created).json({ message: "Nota eliminata" });
     } catch (error) {
       next(error);
     }

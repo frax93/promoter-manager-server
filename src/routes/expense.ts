@@ -15,6 +15,7 @@ import { NotFoundError } from "../errors/not-found-error";
 import { Model } from "sequelize";
 import { UserModel } from "../models/user";
 import { UnauthorizedError } from "../errors/unauthorized-error";
+import { StatusCode } from "../constants/status-code";
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
         },
       ],
     });
-    res.json(spese);
+    res.status(StatusCode.Ok).json(spese);
   } catch (err) {
     next(err);
   }
@@ -49,7 +50,7 @@ router.get("/utente", async (req: Request, res: Response, next: NextFunction) =>
         },
       ],
     });
-    res.json(spese);
+    res.status(StatusCode.Ok).json(spese);
   } catch (err) {
     next(err);
   }
@@ -96,7 +97,7 @@ router.post(
       });
 
       // Rispondi con la spesa creata
-      res.status(201).json(nuovaSpesa);
+      res.status(StatusCode.Created).json(nuovaSpesa);
     } catch (err) {
       next(err);
     }
@@ -139,7 +140,7 @@ router.put(
         tipo_importo,
       });
 
-      res.json(spesaUpdated);
+      res.status(StatusCode.Created).json(spesaUpdated);
     } catch (error) {
       next(error);
     }
@@ -173,7 +174,7 @@ router.delete(
       }
 
       await spesa.destroy();
-      res.json({ message: "Spesa eliminata" });
+      res.status(StatusCode.Created).json({ message: "Spesa eliminata" });
     } catch (error) {
       next(error);
     }
